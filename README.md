@@ -72,11 +72,12 @@ GET /users/wolverine
     "dateOfBirth": "1974-11-16T16:59:59.999Z"
 }
 ```
-#### *Response:*
+#### *Response:* Return *a number*
+- 1: success
+- 0: duplicate key
+- -1: error
 ```json
-{
-    "InsertedID": "wolverine"
-}
+1
 ```
 
 ### Update one user by id
@@ -94,13 +95,11 @@ PUT /users/wolverine
 }
 ```
 #### *Response:* Return *a number*
+- 1: success
+- 0: duplicate key
+- -1: error
 ```json
-{
-    "MatchedCount": 1,
-    "ModifiedCount": 0,
-    "UpsertedCount": 0,
-    "UpsertedID": null
-}
+1
 ```
 
 ### Delete a new user by id
@@ -109,8 +108,9 @@ PUT /users/wolverine
 DELETE /users/wolverine
 ```
 #### *Response:* Return *a number*
+- 1: success
+- 0: duplicate key
+- -1: error
 ```json
-{
-    "DeletedCount": 1
-}
+1
 ```
