@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	m "github.com/common-go/mongo"
 
 	. "go-service/internal/models"
 )
@@ -21,74 +21,34 @@ func NewUserService(db *mongo.Database) *MongoUserService {
 }
 
 func (p *MongoUserService) GetAll(ctx context.Context) (*[]User, error) {
-	query := bson.M{}
-	cursor, er1 := p.Collection.Find(ctx, query)
-	if er1 != nil {
-		return nil, er1
-	}
 	var result []User
-	er2 := cursor.All(ctx, &result)
-	if er2 != nil {
-		return nil, er2
+	_, err := m.FindAndDecode(ctx, p.Collection, bson.M{}, &result)
+	if err != nil {
+		return nil, err
 	}
 	return &result, nil
 }
 
 func (p *MongoUserService) Load(ctx context.Context, id string) (*User, error) {
+	var user User
 	query := bson.M{"_id": id}
-	result := p.Collection.FindOne(ctx, query)
-	if result.Err() != nil {
-		if strings.Compare(fmt.Sprint(result.Err()), "mongo: no documents in result") == 0 {
-			return nil, nil
-		} else {
-			return nil, result.Err()
-		}
+	ok, err := m.FindOneAndDecode(ctx, p.Collection, query, &user)
+	if ok {
+		return &user, err
 	}
-	user := User{}
-	err := result.Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return nil, err
 }
 
 func (p *MongoUserService) Insert(ctx context.Context, user *User) (int64, error) {
-	_, err := p.Collection.InsertOne(ctx, user)
-	if err != nil {
-		errMsg := err.Error()
-		if strings.Index(errMsg, "duplicate key error collection:") >= 0 {
-			if strings.Index(errMsg, "dup key: { _id: ") >= 0 {
-				return 0, nil
-			} else {
-				return -1, nil
-			}
-		} else {
-			return 0, err
-		}
-	}
-	return 1, nil
+	return m.InsertOne(ctx, p.Collection, user)
 }
 
 func (p *MongoUserService) Update(ctx context.Context, user *User) (int64, error) {
 	query := bson.M{"_id": user.Id}
-	updateQuery := bson.M{
-		"$set": user,
-	}
-	result, err := p.Collection.UpdateOne(ctx, query, updateQuery)
-	if result.ModifiedCount > 0 {
-		return result.ModifiedCount, err
-	} else if result.UpsertedCount > 0 {
-		return result.UpsertedCount, err
-	} else {
-		return result.MatchedCount, err
-	}
+	return m.UpdateOne(ctx, p.Collection, user, query)
 }
 
 func (p *MongoUserService) Delete(ctx context.Context, id string) (int64, error) {
 	query := bson.M{"_id": id}
-	result, err := p.Collection.DeleteOne(ctx, query)
-	if result == nil {
-		return 0, err
-	}
-	return result.DeletedCount, err
+	return m.DeleteOne(ctx, p.Collection, query)
 }

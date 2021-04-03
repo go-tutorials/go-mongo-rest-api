@@ -3,28 +3,33 @@ package app
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/common-go/health"
+	"github.com/common-go/mongo"
 
 	"go-service/internal/handlers"
 	"go-service/internal/services"
 )
 
 type ApplicationContext struct {
-	UserHandler     *handlers.UserHandler
+	HealthHandler *health.HealthHandler
+	UserHandler   *handlers.UserHandler
 }
 
-func NewApp(context context.Context, mongoConfig MongoConfig) (*ApplicationContext, error) {
-	client, err := mongo.Connect(context, options.Client().ApplyURI(mongoConfig.Uri))
+func NewApp(ctx context.Context, mongoConfig mongo.MongoConfig) (*ApplicationContext, error) {
+	db, err := mongo.SetupMongo(ctx, mongoConfig)
 	if err != nil {
 		return nil, err
 	}
-	db := client.Database(mongoConfig.Database)
 
 	userService := services.NewUserService(db)
 	userHandler := handlers.NewUserHandler(userService)
 
+	mongoChecker := mongo.NewHealthChecker(db)
+	checkers := []health.HealthChecker{mongoChecker}
+	healthHandler := health.NewHealthHandler(checkers)
+
 	return &ApplicationContext{
-		UserHandler: userHandler,
+		HealthHandler: healthHandler,
+		UserHandler:   userHandler,
 	}, nil
 }

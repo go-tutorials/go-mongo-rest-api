@@ -20,6 +20,21 @@ go run main.go
 - PATCH: perform a partial update of a resource
 - DELETE: delete a resource
 
+## API design for health check
+To check if the service is available.
+#### *Request:* GET /health
+#### *Response:*
+```json
+{
+    "status": "UP",
+    "details": {
+        "mongo": {
+            "status": "UP"
+        }
+    }
+}
+```
+
 ## API design for users
 #### *Resource:* users
 
