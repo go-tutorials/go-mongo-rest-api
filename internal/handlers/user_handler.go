@@ -13,16 +13,11 @@ import (
 )
 
 type UserHandler struct {
-	service  UserService
-	jsonMap  map[string]int
-	userType reflect.Type
+	service UserService
 }
 
 func NewUserHandler(service UserService) *UserHandler {
-	var user User
-	userType := reflect.TypeOf(user)
-	_, jsonMap := server.BuildMapField(userType)
-	return &UserHandler{service: service, jsonMap: jsonMap, userType: userType}
+	return &UserHandler{service: service}
 }
 
 func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -102,22 +97,12 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ids := []string{"id"}
-	json, _, er1 := server.BodyToJson(r, h.userType, ids, h.jsonMap, nil)
+
+	userType := reflect.TypeOf(User{})
+	_, jsonMap := server.BuildMapField(userType)
+	json, _, er1 := server.BodyToJson(r, userType, ids, jsonMap, nil)
 	if er1 != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	vid := json["id"]
-	if vid == nil {
-		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
-		return
-	}
-	sid := vid.(string)
-	if len(sid) == 0 {
-		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
-		return
-	} else if sid != id {
-		http.Error(w, "Id not match", http.StatusBadRequest)
 		return
 	}
 

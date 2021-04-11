@@ -128,14 +128,16 @@ We must solve 2 problems:
 #### Solutions for patch  
 1. At http handler layer, we use [http](https://github.com/common-go/http), to convert the user struct to map, to make sure we just update the fields we need to update
 ```go
-import "github.com/common-go/http"
+import server "github.com/common-go/http"
 
-func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-	var user User
-	userType := reflect.TypeOf(user)
+func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
+	userType := reflect.TypeOf(User{})
 	_, jsonMap := server.BuildMapField(userType)
-	
-	json, _, _ := server.BodyToJson(r, h.userType, ids, h.jsonMap, nil)
+	json, _, er1 := server.BodyToJson(r, userType, ids, jsonMap, nil)
+	if er1 != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
 
 	result, er2 := h.service.Patch(r.Context(), json)
 	if er2 != nil {
@@ -151,15 +153,14 @@ func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{
 import m "github.com/common-go/mongo"
 
 func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-	var model User
-	userType := reflect.TypeOf(model)
+	userType := reflect.TypeOf(User{})
 	maps := m.MakeMapBson(userType)
 	filter := m.BuildQueryByIdFromMap(user, "id")
-	bsonMap := m.MapToBson(user, maps)
-	return m.PatchOne(ctx, p.Collection, bsonMap, filter)
+	bson := m.MapToBson(user, maps)
+	return m.PatchOne(ctx, p.Collection, bson, filter)
 }
-
 ```
+
 #### *Request:* PATCH /users/:id
 ```shell
 PATCH /users/wolverine
