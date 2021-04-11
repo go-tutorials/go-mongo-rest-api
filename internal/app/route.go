@@ -14,8 +14,8 @@ const (
 	DELETE = "DELETE"
 )
 
-func Route(r *mux.Router, context context.Context, mongoConfig mongo.MongoConfig) error {
-	app, err := NewApp(context, mongoConfig)
+func Route(r *mux.Router, ctx context.Context, mongoConfig mongo.MongoConfig) error {
+	app, err := NewApp(ctx, mongoConfig)
 	if err != nil {
 		return err
 	}

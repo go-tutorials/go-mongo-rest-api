@@ -25,8 +25,8 @@ func main() {
 
 	log.Initialize(conf.Log)
 	r.Use(m.BuildContext)
-	l := m.NewStructuredLogger()
-	r.Use(m.Logger(conf.MiddleWare, log.InfoFields, l))
+	logger := m.NewStructuredLogger()
+	r.Use(m.Logger(conf.MiddleWare, log.InfoFields, logger))
 	r.Use(m.Recover(log.ErrorMsg))
 
 	er2 := app.Route(r, context.Background(), conf.Mongo)

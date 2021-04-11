@@ -14,8 +14,8 @@ type UserHandler struct {
 	service UserService
 }
 
-func NewUserHandler(userService UserService) *UserHandler {
-	return &UserHandler{service: userService}
+func NewUserHandler(service UserService) *UserHandler {
+	return &UserHandler{service: service}
 }
 
 func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +72,9 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
 		return
 	}
-	if id != user.Id {
+	if len(user.Id) == 0 {
+		user.Id = id
+	} else if id != user.Id {
 		http.Error(w, "Id not match", http.StatusBadRequest)
 		return
 	}
