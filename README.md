@@ -17,7 +17,7 @@ go run main.go
 - GET: retrieve a representation of the resource
 - POST: create a new resource
 - PUT: update the resource
-- PATCH: perform a partial update of a resource
+- PATCH: perform a partial update of a resource, refer to [http](https://github.com/common-go/http) and [mongo](https://github.com/common-go/mongo)  
 - DELETE: delete a resource
 
 ## API design for health check
@@ -103,6 +103,71 @@ PUT /users/wolverine
     "email": "james.howlett@gmail.com",
     "phone": "0987654321",
     "dateOfBirth": "1974-11-16T16:59:59.999Z"
+}
+```
+#### *Response:* 1: success, 0: not found, -1: error
+```json
+1
+```
+
+### Patch one user by id
+Perform a partial update of user. For example, if you want to update 2 fields: email and phone, you can send the request body of below.
+
+#### Problems for patch
+If we pass a struct as a parameter, we cannot control what fields we need to update. So, we must pass a map as a parameter.
+```go
+type UserService interface {
+	Update(ctx context.Context, user *User) (int64, error)
+	Patch(ctx context.Context, user map[string]interface{}) (int64, error)
+}
+```
+We must solve 2 problems:
+1. At http handler layer, we must convert the user struct to map, with json format, and make sure the nested data types are passed correctly.
+2. At service layer or repository layer, from json format, we must convert the json format to database format (in this case, we must convert to bson of Mongo)
+
+#### Solutions for patch  
+1. At http handler layer, we use [http](https://github.com/common-go/http), to convert the user struct to map, to make sure we just update the fields we need to update
+```go
+import "github.com/common-go/http"
+
+func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
+	var user User
+	userType := reflect.TypeOf(user)
+	_, jsonMap := server.BuildMapField(userType)
+	
+	json, _, _ := server.BodyToJson(r, h.userType, ids, h.jsonMap, nil)
+
+	result, er2 := h.service.Patch(r.Context(), json)
+	if er2 != nil {
+		http.Error(w, er2.Error(), http.StatusInternalServerError)
+		return
+	}
+	respond(w, result)
+}
+```
+
+2. At service layer or repository layer, we use [mongo](https://github.com/common-go/mongo), to convert from json to bson 
+```go
+import m "github.com/common-go/mongo"
+
+func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
+	var model User
+	userType := reflect.TypeOf(model)
+	maps := m.MakeMapBson(userType)
+	filter := m.BuildQueryByIdFromMap(user, "id")
+	bsonMap := m.MapToBson(user, maps)
+	return m.PatchOne(ctx, p.Collection, bsonMap, filter)
+}
+
+```
+#### *Request:* PATCH /users/:id
+```shell
+PATCH /users/wolverine
+```
+```json
+{
+    "email": "james.howlett@gmail.com",
+    "phone": "0987654321"
 }
 ```
 #### *Response:* 1: success, 0: not found, -1: error

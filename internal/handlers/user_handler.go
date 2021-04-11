@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 
+	"github.com/common-go/http"
 	"github.com/gorilla/mux"
 
 	. "go-service/internal/models"
@@ -11,11 +13,16 @@ import (
 )
 
 type UserHandler struct {
-	service UserService
+	service  UserService
+	jsonMap  map[string]int
+	userType reflect.Type
 }
 
 func NewUserHandler(service UserService) *UserHandler {
-	return &UserHandler{service: service}
+	var user User
+	userType := reflect.TypeOf(user)
+	_, jsonMap := server.BuildMapField(userType)
+	return &UserHandler{service: service, jsonMap: jsonMap, userType: userType}
 }
 
 func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +87,41 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, er2 := h.service.Update(r.Context(), &user)
+	if er2 != nil {
+		http.Error(w, er2.Error(), http.StatusInternalServerError)
+		return
+	}
+	respond(w, result)
+}
+
+func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	ids := []string{"id"}
+	json, _, er1 := server.BodyToJson(r, h.userType, ids, h.jsonMap, nil)
+	if er1 != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	vid := json["id"]
+	if vid == nil {
+		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
+		return
+	}
+	sid := vid.(string)
+	if len(sid) == 0 {
+		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
+		return
+	} else if sid != id {
+		http.Error(w, "Id not match", http.StatusBadRequest)
+		return
+	}
+
+	result, er2 := h.service.Patch(r.Context(), json)
 	if er2 != nil {
 		http.Error(w, er2.Error(), http.StatusInternalServerError)
 		return

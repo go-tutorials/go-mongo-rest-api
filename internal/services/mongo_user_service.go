@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,11 +14,15 @@ import (
 
 type MongoUserService struct {
 	Collection *mongo.Collection
+	maps       map[string]string
 }
 
 func NewUserService(db *mongo.Database) *MongoUserService {
+	var user User
+	userType := reflect.TypeOf(user)
+	maps := m.MakeMapBson(userType)
 	collectionName := "users"
-	return &MongoUserService{Collection: db.Collection(collectionName)}
+	return &MongoUserService{Collection: db.Collection(collectionName), maps: maps}
 }
 
 func (p *MongoUserService) GetAll(ctx context.Context) (*[]User, error) {
@@ -46,6 +51,12 @@ func (p *MongoUserService) Insert(ctx context.Context, user *User) (int64, error
 func (p *MongoUserService) Update(ctx context.Context, user *User) (int64, error) {
 	query := bson.M{"_id": user.Id}
 	return m.UpdateOne(ctx, p.Collection, user, query)
+}
+
+func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
+	filter := m.BuildQueryByIdFromMap(user, "id")
+	bsonMap := m.MapToBson(user, p.maps)
+	return m.PatchOne(ctx, p.Collection, bsonMap, filter)
 }
 
 func (p *MongoUserService) Delete(ctx context.Context, id string) (int64, error) {
