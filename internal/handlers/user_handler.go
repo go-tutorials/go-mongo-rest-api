@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/common-go/http"
+	sv "github.com/common-go/service"
 	"github.com/gorilla/mux"
 
 	. "go-service/internal/models"
@@ -98,11 +98,19 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 
 	ids := []string{"id"}
 
-	userType := reflect.TypeOf(User{})
-	_, jsonMap := server.BuildMapField(userType)
-	json, _, er1 := server.BodyToJson(r, userType, ids, jsonMap, nil)
+	var user User
+	userType := reflect.TypeOf(user)
+	_, jsonMap := sv.BuildMapField(userType)
+	body, _ := sv.BuildMapAndStruct(r, &user)
+	if len(user.Id) == 0 {
+		user.Id = id
+	} else if id != user.Id {
+		http.Error(w, "Id not match", http.StatusBadRequest)
+		return
+	}
+	json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
 	if er1 != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+		http.Error(w, er1.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -112,6 +112,20 @@ PUT /users/wolverine
 
 ### Patch one user by id
 Perform a partial update of user. For example, if you want to update 2 fields: email and phone, you can send the request body of below.
+#### *Request:* PATCH /users/:id
+```shell
+PATCH /users/wolverine
+```
+```json
+{
+    "email": "james.howlett@gmail.com",
+    "phone": "0987654321"
+}
+```
+#### *Response:* 1: success, 0: not found, -1: error
+```json
+1
+```
 
 #### Problems for patch
 If we pass a struct as a parameter, we cannot control what fields we need to update. So, we must pass a map as a parameter.
@@ -131,20 +145,18 @@ We must solve 2 problems:
 import server "github.com/common-go/http"
 
 func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
-	userType := reflect.TypeOf(User{})
-	_, jsonMap := server.BuildMapField(userType)
-	json, _, er1 := server.BodyToJson(r, userType, ids, jsonMap, nil)
-	if er1 != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
+  var user User
+  userType := reflect.TypeOf(user)
+  _, jsonMap := sv.BuildMapField(userType)
+  body, _ := sv.BuildMapAndStruct(r, &user)
+  json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
 
-	result, er2 := h.service.Patch(r.Context(), json)
-	if er2 != nil {
-		http.Error(w, er2.Error(), http.StatusInternalServerError)
-		return
-	}
-	respond(w, result)
+  result, er2 := h.service.Patch(r.Context(), json)
+  if er2 != nil {
+    http.Error(w, er2.Error(), http.StatusInternalServerError)
+    return
+  }
+  respond(w, result)
 }
 ```
 
@@ -153,27 +165,12 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 import m "github.com/common-go/mongo"
 
 func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-	userType := reflect.TypeOf(User{})
-	maps := m.MakeMapBson(userType)
-	filter := m.BuildQueryByIdFromMap(user, "id")
-	bson := m.MapToBson(user, maps)
-	return m.PatchOne(ctx, p.Collection, bson, filter)
+  userType := reflect.TypeOf(User{})
+  maps := m.MakeMapBson(userType)
+  filter := m.BuildQueryByIdFromMap(user, "id")
+  bson := m.MapToBson(user, maps)
+  return m.PatchOne(ctx, p.Collection, bson, filter)
 }
-```
-
-#### *Request:* PATCH /users/:id
-```shell
-PATCH /users/wolverine
-```
-```json
-{
-    "email": "james.howlett@gmail.com",
-    "phone": "0987654321"
-}
-```
-#### *Response:* 1: success, 0: not found, -1: error
-```json
-1
 ```
 
 ### Delete a new user by id
@@ -208,20 +205,20 @@ To check if the service is available, refer to [common-go/health](https://github
 ```
 To create health checker, and health handler
 ```go
-	db, err := mongo.SetupMongo(ctx, mongoConfig)
-    if err != nil {
-        return nil, err
-    }
+  db, err := mongo.SetupMongo(ctx, mongoConfig)
+  if err != nil {
+    return nil, err
+  }
 
-	mongoChecker := mongo.NewHealthChecker(db)
-	checkers := []health.HealthChecker{mongoChecker}
-	healthHandler := health.NewHealthHandler(checkers)
+  mongoChecker := mongo.NewHealthChecker(db)
+  checkers := []health.HealthChecker{mongoChecker}
+  healthHandler := health.NewHealthHandler(checkers)
 ```
 
 To handler routing
 ```go
-	r := mux.NewRouter()
-	r.HandleFunc("/health", healthHandler.Check).Methods("GET")
+  r := mux.NewRouter()
+  r.HandleFunc("/health", healthHandler.Check).Methods("GET")
 ```
 
 ### common-go/config
@@ -232,20 +229,20 @@ package main
 import "github.com/common-go/config"
 
 type Root struct {
-	DB DatabaseConfig `mapstructure:"db"`
+  DB DatabaseConfig `mapstructure:"db"`
 }
 
 type DatabaseConfig struct {
-	Driver         string `mapstructure:"driver"`
-	DataSourceName string `mapstructure:"data_source_name"`
+  Driver         string `mapstructure:"driver"`
+  DataSourceName string `mapstructure:"data_source_name"`
 }
 
 func main() {
-	var conf Root
-	err := config.Load(&conf, "configs/config")
-	if err != nil {
-		panic(err)
-	}
+  var conf Root
+  err := config.Load(&conf, "configs/config")
+  if err != nil {
+    panic(err)
+  }
 }
 ```
 
