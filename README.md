@@ -204,10 +204,11 @@ To check if the service is available, refer to [common-go/health](https://github
 ```
 To create health checker, and health handler
 ```go
-    db, err := mongo.SetupMongo(ctx, mongoConfig)
+    client, err := mongo.Connect(ctx, options.Client().ApplyURI(root.Mongo.Uri))
     if err != nil {
         return nil, err
     }
+    db := client.Database(root.Mongo.Database)
 
     mongoChecker := mongo.NewHealthChecker(db)
     healthHandler := health.NewHealthHandler(mongoChecker)
