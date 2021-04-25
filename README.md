@@ -17,7 +17,7 @@ go run main.go
 - GET: retrieve a representation of the resource
 - POST: create a new resource
 - PUT: update the resource
-- PATCH: perform a partial update of a resource, refer to [http](https://github.com/common-go/http) and [mongo](https://github.com/common-go/mongo)  
+- PATCH: perform a partial update of a resource, refer to [service](https://github.com/common-go/service) and [mongo](https://github.com/common-go/mongo)  
 - DELETE: delete a resource
 
 ## API design for health check
@@ -131,8 +131,8 @@ PATCH /users/wolverine
 If we pass a struct as a parameter, we cannot control what fields we need to update. So, we must pass a map as a parameter.
 ```go
 type UserService interface {
-	Update(ctx context.Context, user *User) (int64, error)
-	Patch(ctx context.Context, user map[string]interface{}) (int64, error)
+    Update(ctx context.Context, user *User) (int64, error)
+    Patch(ctx context.Context, user map[string]interface{}) (int64, error)
 }
 ```
 We must solve 2 problems:
@@ -140,36 +140,36 @@ We must solve 2 problems:
 2. At service layer or repository layer, from json format, we must convert the json format to database format (in this case, we must convert to bson of Mongo)
 
 #### Solutions for patch  
-1. At http handler layer, we use [http](https://github.com/common-go/http), to convert the user struct to map, to make sure we just update the fields we need to update
+1. At http handler layer, we use [common-go/service](https://github.com/common-go/service), to convert the user struct to map, to make sure we just update the fields we need to update
 ```go
-import server "github.com/common-go/http"
+import server "github.com/common-go/service"
 
 func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
-  var user User
-  userType := reflect.TypeOf(user)
-  _, jsonMap := sv.BuildMapField(userType)
-  body, _ := sv.BuildMapAndStruct(r, &user)
-  json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
+    var user User
+    userType := reflect.TypeOf(user)
+    _, jsonMap := sv.BuildMapField(userType)
+    body, _ := sv.BuildMapAndStruct(r, &user)
+    json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
 
-  result, er2 := h.service.Patch(r.Context(), json)
-  if er2 != nil {
-    http.Error(w, er2.Error(), http.StatusInternalServerError)
-    return
-  }
-  respond(w, result)
+    result, er2 := h.service.Patch(r.Context(), json)
+    if er2 != nil {
+        http.Error(w, er2.Error(), http.StatusInternalServerError)
+        return
+    }
+    respond(w, result)
 }
 ```
 
-2. At service layer or repository layer, we use [mongo](https://github.com/common-go/mongo), to convert from json to bson 
+2. At service layer or repository layer, we use [common-go/mongo](https://github.com/common-go/mongo), to convert from json to bson 
 ```go
 import m "github.com/common-go/mongo"
 
 func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-  userType := reflect.TypeOf(User{})
-  maps := m.MakeMapBson(userType)
-  filter := m.BuildQueryByIdFromMap(user, "id")
-  bson := m.MapToBson(user, maps)
-  return m.PatchOne(ctx, p.Collection, bson, filter)
+    userType := reflect.TypeOf(User{})
+    maps := m.MakeMapBson(userType)
+    filter := m.BuildQueryByIdFromMap(user, "id")
+    bson := m.MapToBson(user, maps)
+    return m.PatchOne(ctx, p.Collection, bson, filter)
 }
 ```
 
@@ -184,10 +184,9 @@ DELETE /users/wolverine
 ```
 
 ## Common libraries
-- [common-go/health](https://github.com/common-go/health): include HealthHandler, HealthChecker, SqlHealthChecker
+- [common-go/health](https://github.com/common-go/health): include HealthHandler, HealthChecker, MongoHealthChecker
 - [common-go/config](https://github.com/common-go/config): to load the config file, and merge with other environments (SIT, UAT, ENV)
-- [common-go/log](https://github.com/common-go/log)
-- [common-go/middleware](https://github.com/common-go/middleware): to log all http requests, http responses. User can configure not to log the health check.
+- [common-go/log](https://github.com/common-go/log): log and log middleware
 
 ### common-go/health
 To check if the service is available, refer to [common-go/health](https://github.com/common-go/health)
@@ -205,20 +204,19 @@ To check if the service is available, refer to [common-go/health](https://github
 ```
 To create health checker, and health handler
 ```go
-  db, err := mongo.SetupMongo(ctx, mongoConfig)
-  if err != nil {
-    return nil, err
-  }
+    db, err := mongo.SetupMongo(ctx, mongoConfig)
+    if err != nil {
+        return nil, err
+    }
 
-  mongoChecker := mongo.NewHealthChecker(db)
-  checkers := []health.HealthChecker{mongoChecker}
-  healthHandler := health.NewHealthHandler(checkers)
+    mongoChecker := mongo.NewHealthChecker(db)
+    healthHandler := health.NewHealthHandler(mongoChecker)
 ```
 
 To handler routing
 ```go
-  r := mux.NewRouter()
-  r.HandleFunc("/health", healthHandler.Check).Methods("GET")
+    r := mux.NewRouter()
+    r.HandleFunc("/health", healthHandler.Check).Methods("GET")
 ```
 
 ### common-go/config
@@ -229,29 +227,29 @@ package main
 import "github.com/common-go/config"
 
 type Root struct {
-  DB DatabaseConfig `mapstructure:"db"`
+    DB DatabaseConfig `mapstructure:"db"`
 }
 
 type DatabaseConfig struct {
-  Driver         string `mapstructure:"driver"`
-  DataSourceName string `mapstructure:"data_source_name"`
+    Driver                 string `mapstructure:"driver"`
+    DataSourceName string `mapstructure:"data_source_name"`
 }
 
 func main() {
-  var conf Root
-  err := config.Load(&conf, "configs/config")
-  if err != nil {
-    panic(err)
-  }
+    var conf Root
+    err := config.Load(&conf, "configs/config")
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
-### common-go/log *&* common-go/middleware
+### common-go/log *&* common-go/log/middleware
 ```go
 import (
 	"github.com/common-go/config"
 	"github.com/common-go/log"
-	m "github.com/common-go/middleware"
+	mid "github.com/common-go/log/middleware"
 	"github.com/gorilla/mux"
 )
 
@@ -262,10 +260,10 @@ func main() {
 	r := mux.NewRouter()
 
 	log.Initialize(conf.Log)
-	r.Use(m.BuildContext)
-	logger := m.NewStructuredLogger()
-	r.Use(m.Logger(conf.MiddleWare, log.InfoFields, logger))
-	r.Use(m.Recover(log.ErrorMsg))
+	r.Use(mid.BuildContext)
+	logger := mid.NewStructuredLogger()
+	r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
+	r.Use(mid.Recover(log.ErrorMsg))
 }
 ```
 To configure to ignore the health check, use "skips":

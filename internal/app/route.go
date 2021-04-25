@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-
-	"github.com/common-go/mongo"
 	"github.com/gorilla/mux"
 )
 
@@ -15,8 +13,8 @@ const (
 	DELETE = "DELETE"
 )
 
-func Route(r *mux.Router, ctx context.Context, mongoConfig mongo.MongoConfig) error {
-	app, err := NewApp(ctx, mongoConfig)
+func Route(r *mux.Router, ctx context.Context, root Root) error {
+	app, err := NewApp(ctx, root)
 	if err != nil {
 		return err
 	}

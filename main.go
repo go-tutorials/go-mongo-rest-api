@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strconv"
-
 	"github.com/common-go/config"
 	"github.com/common-go/log"
-	m "github.com/common-go/middleware"
+	mid "github.com/common-go/log/middleware"
+	sv "github.com/common-go/service"
 	"github.com/gorilla/mux"
+	"net/http"
 
 	"go-service/internal/app"
 )
@@ -24,19 +23,15 @@ func main() {
 	r := mux.NewRouter()
 
 	log.Initialize(conf.Log)
-	r.Use(m.BuildContext)
-	logger := m.NewStructuredLogger()
-	r.Use(m.Logger(conf.MiddleWare, log.InfoFields, logger))
-	r.Use(m.Recover(log.ErrorMsg))
+	r.Use(mid.BuildContext)
+	logger := mid.NewStructuredLogger()
+	r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
+	r.Use(mid.Recover(log.ErrorMsg))
 
-	er2 := app.Route(r, context.Background(), conf.Mongo)
+	er2 := app.Route(r, context.Background(), conf)
 	if er2 != nil {
 		panic(er2)
 	}
-	fmt.Println("Start server")
-	server := ""
-	if conf.Server.Port > 0 {
-		server = ":" + strconv.Itoa(conf.Server.Port)
-	}
-	http.ListenAndServe(server, r)
+	fmt.Println(sv.ServerInfo(conf.Server))
+	http.ListenAndServe(sv.Addr(conf.Server.Port), r)
 }

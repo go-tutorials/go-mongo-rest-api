@@ -2,18 +2,14 @@ package app
 
 import (
 	"github.com/common-go/log"
-	m "github.com/common-go/middleware"
+	mid "github.com/common-go/log/middleware"
 	"github.com/common-go/mongo"
+	sv "github.com/common-go/service"
 )
 
 type Root struct {
-	Server     ServerConfig      `mapstructure:"server"`
+	Server     sv.ServerConfig   `mapstructure:"server"`
 	Mongo      mongo.MongoConfig `mapstructure:"mongo"`
 	Log        log.Config        `mapstructure:"log"`
-	MiddleWare m.LogConfig       `mapstructure:"middleware"`
-}
-
-type ServerConfig struct {
-	Name string `mapstructure:"name"`
-	Port int    `mapstructure:"port"`
+	MiddleWare mid.LogConfig     `mapstructure:"middleware"`
 }
