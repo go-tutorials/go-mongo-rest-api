@@ -1,5 +1,5 @@
 server:
-  name: go-mongo-tutorial
+  name: go-mongo-rest-api
   port: 8080
 
 mongo:

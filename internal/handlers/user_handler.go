@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"reflect"
 
-	sv "github.com/common-go/service"
+	sv "github.com/core-go/service"
 	"github.com/gorilla/mux"
 
 	. "go-service/internal/models"

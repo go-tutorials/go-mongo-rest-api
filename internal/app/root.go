@@ -1,10 +1,10 @@
 package app
 
 import (
-	"github.com/common-go/log"
-	mid "github.com/common-go/log/middleware"
-	"github.com/common-go/mongo"
-	sv "github.com/common-go/service"
+	"github.com/core-go/log"
+	mid "github.com/core-go/log/middleware"
+	"github.com/core-go/mongo"
+	sv "github.com/core-go/service"
 )
 
 type Root struct {

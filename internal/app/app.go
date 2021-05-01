@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
-	"github.com/common-go/health"
-	mgo "github.com/common-go/mongo"
+	"github.com/core-go/health"
+	mgo "github.com/core-go/mongo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 

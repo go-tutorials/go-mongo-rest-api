@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/common-go/config"
-	"github.com/common-go/log"
-	mid "github.com/common-go/log/middleware"
-	sv "github.com/common-go/service"
+	"github.com/core-go/config"
+	"github.com/core-go/log"
+	mid "github.com/core-go/log/middleware"
+	sv "github.com/core-go/service"
 	"github.com/gorilla/mux"
 	"net/http"
 
@@ -25,8 +25,10 @@ func main() {
 	log.Initialize(conf.Log)
 	r.Use(mid.BuildContext)
 	logger := mid.NewStructuredLogger()
-	r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
-	r.Use(mid.Recover(log.ErrorMsg))
+	if log.IsInfoEnable() {
+		r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
+	}
+	r.Use(mid.Recover(log.PanicMsg))
 
 	er2 := app.Route(r, context.Background(), conf)
 	if er2 != nil {
