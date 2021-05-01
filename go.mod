@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/common-go/config v0.0.9
-	github.com/common-go/health v0.4.0
+	github.com/common-go/health v0.4.1
 	github.com/common-go/log v0.0.7
 	github.com/common-go/mongo v0.3.3
 	github.com/common-go/service v0.1.5
