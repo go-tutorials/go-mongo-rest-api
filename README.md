@@ -17,7 +17,7 @@ go run main.go
 - GET: retrieve a representation of the resource
 - POST: create a new resource
 - PUT: update the resource
-- PATCH: perform a partial update of a resource, refer to [service](https://github.com/common-go/service) and [mongo](https://github.com/common-go/mongo)  
+- PATCH: perform a partial update of a resource, refer to [service](https://github.com/core-go/service) and [mongo](https://github.com/core-go/mongo)  
 - DELETE: delete a resource
 
 ## API design for health check
@@ -140,9 +140,9 @@ We must solve 2 problems:
 2. At service layer or repository layer, from json format, we must convert the json format to database format (in this case, we must convert to bson of Mongo)
 
 #### Solutions for patch  
-1. At http handler layer, we use [common-go/service](https://github.com/common-go/service), to convert the user struct to map, to make sure we just update the fields we need to update
+1. At http handler layer, we use [core-go/service](https://github.com/core-go/service), to convert the user struct to map, to make sure we just update the fields we need to update
 ```go
-import server "github.com/common-go/service"
+import server "github.com/core-go/service"
 
 func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
     var user User
@@ -160,9 +160,9 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-2. At service layer or repository layer, we use [common-go/mongo](https://github.com/common-go/mongo), to convert from json to bson 
+2. At service layer or repository layer, we use [core-go/mongo](https://github.com/core-go/mongo), to convert from json to bson 
 ```go
-import m "github.com/common-go/mongo"
+import m "github.com/core-go/mongo"
 
 func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
     userType := reflect.TypeOf(User{})
@@ -184,12 +184,12 @@ DELETE /users/wolverine
 ```
 
 ## Common libraries
-- [common-go/health](https://github.com/common-go/health): include HealthHandler, HealthChecker, MongoHealthChecker
-- [common-go/config](https://github.com/common-go/config): to load the config file, and merge with other environments (SIT, UAT, ENV)
-- [common-go/log](https://github.com/common-go/log): log and log middleware
+- [core-go/health](https://github.com/core-go/health): include HealthHandler, HealthChecker, MongoHealthChecker
+- [core-go/config](https://github.com/core-go/config): to load the config file, and merge with other environments (SIT, UAT, ENV)
+- [core-go/log](https://github.com/core-go/log): log and log middleware
 
-### common-go/health
-To check if the service is available, refer to [common-go/health](https://github.com/common-go/health)
+### core-go/health
+To check if the service is available, refer to [core-go/health](https://github.com/core-go/health)
 #### *Request:* GET /health
 #### *Response:*
 ```json
@@ -220,12 +220,12 @@ To handler routing
     r.HandleFunc("/health", healthHandler.Check).Methods("GET")
 ```
 
-### common-go/config
+### core-go/config
 To load the config from "config.yml", in "configs" folder
 ```go
 package main
 
-import "github.com/common-go/config"
+import "github.com/core-go/config"
 
 type Root struct {
     DB DatabaseConfig `mapstructure:"db"`
@@ -245,12 +245,12 @@ func main() {
 }
 ```
 
-### common-go/log *&* common-go/log/middleware
+### core-go/log *&* core-go/log/middleware
 ```go
 import (
-	"github.com/common-go/config"
-	"github.com/common-go/log"
-	mid "github.com/common-go/log/middleware"
+	"github.com/core-go/config"
+	"github.com/core-go/log"
+	mid "github.com/core-go/log/middleware"
 	"github.com/gorilla/mux"
 )
 
