@@ -162,14 +162,14 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 
 2. At service layer or repository layer, we use [core-go/mongo](https://github.com/core-go/mongo), to convert from json to bson 
 ```go
-import m "github.com/core-go/mongo"
+import mgo "github.com/core-go/mongo"
 
 func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
     userType := reflect.TypeOf(User{})
-    maps := m.MakeMapBson(userType)
-    filter := m.BuildQueryByIdFromMap(user, "id")
-    bson := m.MapToBson(user, maps)
-    return m.PatchOne(ctx, p.Collection, bson, filter)
+    maps := mgo.MakeMapBson(userType)
+    filter := mgo.BuildQueryByIdFromMap(user, "id")
+    bson := mgo.MapToBson(user, maps)
+    return mgo.PatchOne(ctx, p.Collection, bson, filter)
 }
 ```
 
