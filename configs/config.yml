@@ -3,8 +3,8 @@ server:
   port: 8080
 
 mongo:
-  uri: mongodb://localhost:27017
-  database: masterdata
+  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net/
+  database: myFirstDatabase
 
 log:
   level: info
