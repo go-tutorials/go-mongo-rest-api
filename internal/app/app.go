@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"github.com/core-go/health"
-	mgo "github.com/core-go/mongo"
+	mgo "github.com/core-go/health/mongo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -27,8 +27,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	userHandler := handlers.NewUserHandler(userService)
 
 	mongoChecker := mgo.NewHealthChecker(db)
-	checkers := []health.HealthChecker{mongoChecker}
-	healthHandler := health.NewHealthHandler(checkers)
+	healthHandler := health.NewHealthHandler(mongoChecker)
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
