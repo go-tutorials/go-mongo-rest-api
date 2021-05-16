@@ -166,7 +166,7 @@ import mgo "github.com/core-go/mongo"
 
 func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
     userType := reflect.TypeOf(User{})
-    maps := mgo.MakeMapBson(userType)
+    maps := mgo.MakeBsonMap(userType)
     filter := mgo.BuildQueryByIdFromMap(user, "id")
     bson := mgo.MapToBson(user, maps)
     return mgo.PatchOne(ctx, p.Collection, bson, filter)

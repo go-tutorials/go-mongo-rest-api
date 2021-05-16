@@ -88,7 +88,7 @@ func (s *MongoUserService) Update(ctx context.Context, user *User) (int64, error
 
 func (s *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
 	userType := reflect.TypeOf(User{})
-	maps := mgo.MakeMapBson(userType)
+	maps := mgo.MakeBsonMap(userType)
 	filter := mgo.BuildQueryByIdFromMap(user, "id")
 	bson := mgo.MapToBson(user, maps)
 	return mgo.PatchOne(ctx, s.Collection, bson, filter)
