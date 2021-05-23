@@ -12,7 +12,7 @@ import (
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.HealthHandler
+	HealthHandler *health.Handler
 	UserHandler   *handlers.UserHandler
 }
 
@@ -27,7 +27,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	userHandler := handlers.NewUserHandler(userService)
 
 	mongoChecker := mgo.NewHealthChecker(db)
-	healthHandler := health.NewHealthHandler(mongoChecker)
+	healthHandler := health.NewHandler(mongoChecker)
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
