@@ -10,6 +10,7 @@ type Root struct {
 	Mongo      MongoConfig   `mapstructure:"mongo"`
 	Log        log.Config    `mapstructure:"log"`
 	MiddleWare mid.LogConfig `mapstructure:"middleware"`
+	Key        string        `mapstructure:"key"`
 }
 
 type ServerConfig struct {

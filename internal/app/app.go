@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+
 	"github.com/core-go/health"
 	mgo "github.com/core-go/health/mongo"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,8 +13,8 @@ import (
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.HealthHandler
-	UserHandler   *handlers.UserHandler
+	HealthHandler *health.Handler
+	TubeHandler   *handlers.TubeHandler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -23,14 +24,14 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}
 	db := client.Database(root.Mongo.Database)
 
-	userService := services.NewUserService(db)
-	userHandler := handlers.NewUserHandler(userService)
-
 	mongoChecker := mgo.NewHealthChecker(db)
-	healthHandler := health.NewHealthHandler(mongoChecker)
+	healthHandler := health.NewHandler(mongoChecker)
+
+	tubeService := services.NewTubeService(root.Key)
+	tubeHandler := handlers.NewTubeHandler(tubeService)
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
-		UserHandler:   userHandler,
+		TubeHandler:   tubeHandler,
 	}, nil
 }

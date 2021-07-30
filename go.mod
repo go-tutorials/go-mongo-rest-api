@@ -1,12 +1,11 @@
 module go-service
 
-go 1.15
+go 1.16
 
 require (
-	github.com/core-go/config v0.1.0
-	github.com/core-go/health v0.4.5
-	github.com/core-go/log v0.0.7
-	github.com/gorilla/mux v1.8.0
-	github.com/sirupsen/logrus v1.8.1 // indirect
-	go.mongodb.org/mongo-driver v1.5.2
+	github.com/core-go/config v0.1.0 // indirect
+	github.com/core-go/health v0.4.6 // indirect
+	github.com/core-go/log v0.0.7 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
+	go.mongodb.org/mongo-driver v1.7.0 // indirect
 )
