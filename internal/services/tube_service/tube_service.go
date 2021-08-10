@@ -1,4 +1,4 @@
-package services
+package tube_service
 
 import (
 	. "go-service/internal/models"

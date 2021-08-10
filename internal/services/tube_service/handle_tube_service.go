@@ -1,4 +1,4 @@
-package services
+package tube_service
 
 import (
 	"encoding/json"
@@ -213,7 +213,7 @@ func convertPlaylistVideo(url string) (*ListResultPlaylistVideo, error) {
 	listResultPlaylistVideo.NextPageToken = summary.NextPageToken
 	for _, v := range summary.Items {
 		playlistVideo := PlaylistVideo{}
-		playlistVideo.Id = v.Id
+		playlistVideo.Id = v.ContentDetails.VideoId
 		playlistVideo.Title = v.Snippet.Title
 		playlistVideo.Description = v.Snippet.Description
 		playlistVideo.PublishedAt = &v.Snippet.PublishedAt
@@ -245,6 +245,7 @@ func convertVideos(url string) (*ListResultVideos, error) {
 	if er1 != nil {
 		return nil, er1
 	}
+	//log.Println(string(body))
 	defer resp.Body.Close()
 	er2 := json.Unmarshal(body, &summary)
 	if er2 != nil {
@@ -293,8 +294,10 @@ func convertVideos(url string) (*ListResultVideos, error) {
 		video.HighThumbnail = v.Snippet.Thumbnails.Medium.Url
 		video.StandardThumbnail = v.Snippet.Thumbnails.Standard.Url
 		video.MaxresThumbnail = v.Snippet.Thumbnails.Maxres.Url
-		if v.ContentDetails.RegionRestriction.Allow != nil && v.ContentDetails.RegionRestriction.Blocked != nil {
+		if len(v.ContentDetails.RegionRestriction.Allow) > 0 {
 			video.AllowedRegions = v.ContentDetails.RegionRestriction.Allow
+		}
+		if len(v.ContentDetails.RegionRestriction.Blocked) > 0 {
 			video.BlockedRegions = v.ContentDetails.RegionRestriction.Blocked
 		}
 		listResultVideos.List = append(listResultVideos.List, video)
@@ -303,18 +306,50 @@ func convertVideos(url string) (*ListResultVideos, error) {
 }
 
 func calculateDuration(d string) (float64, error) {
-	if d != "" {
+	if d == "" {
 		return 0, nil
 	}
 	k := strings.Split(d, "M")
 	if len(k) < 2 {
-		return 0, nil
+		g := strings.Split(d, "H")
+		if len(g) < 2 {
+			var a0 string
+			if len(d) > 0 {
+				a0 = d[2 : len(d)-1]
+			}
+			a1, er0 := strconv.ParseFloat(a0, 32)
+			if er0 != nil {
+				return -1, er0
+			}
+			if strings.Contains(d, "S") {
+				return a1, nil
+			} else {
+				return a1 * 3600, nil
+			}
+		} else {
+			var a0 string
+			if len(d) > 0 {
+				a0 = d[2 : len(d)-3]
+			}
+			a3, er0 := strconv.ParseFloat(a0[0:len(a0)-1], 32)
+			if er0 != nil {
+				return -1, er0
+			}
+			return a3 * 3600, nil
+		}
 	}
-	a := k[1][:len(k[1])-0]
+	var a string
+	if k[1] != "" {
+		a = k[1][0 : len(k[1])-1]
+	}
+	if len(a) == 0 {
+		a = "0"
+	}
+
 	x := strings.Split(k[0], "H")
 	var b string
-	if len(x) == 1 {
-		b = k[0][:len(k[0])-2]
+	if len(x) == 1 && len(k[0]) > 0 {
+		b = k[0][2:len(k[0])]
 	} else {
 		b = x[1]
 	}
@@ -330,7 +365,10 @@ func calculateDuration(d string) (float64, error) {
 		if len(x) == 1 {
 			return a2*60 + a1, nil
 		} else {
-			c := x[0][:len(k[0])-2]
+			var c string
+			if len(x[0]) > 0 {
+				c = x[0][2:len(x[0])]
+			}
 			c1, er2 := strconv.ParseFloat(c, 32)
 			if er2 != nil {
 				return -1, er2

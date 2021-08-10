@@ -26,3 +26,10 @@ type ListResultPlaylist struct {
 	Limit         int        `mapstructure:"limit" json:"limit,omitempty" gorm:"column:limit;primary_key" bson:"limit,omitempty" dynamodbav:"limit,omitempty" firestore:"limit,omitempty"`
 	NextPageToken string     `mapstructure:"nextPageToken" json:"nextPageToken,omitempty" gorm:"column:nextPageToken;primary_key" bson:"nextPageToken,omitempty" dynamodbav:"nextPageToken,omitempty" firestore:"nextPageToken,omitempty"`
 }
+
+type PlaylistResult struct {
+	Count         int `mapstructure:"count" json:"count,omitempty" gorm:"column:count;primary_key" bson:"count,omitempty" dynamodbav:"count,omitempty" firestore:"count,omitempty"`
+	All           int `mapstructure:"all" json:"all,omitempty" gorm:"column:all;primary_key" bson:"all,omitempty" dynamodbav:"all,omitempty" firestore:"all,omitempty"`
+	VideoCount    int `mapstructure:"videoCount" json:"videoCount,omitempty" gorm:"column:videoCount;primary_key" bson:"videoCount,omitempty" dynamodbav:"videoCount,omitempty" firestore:"videoCount,omitempty"`
+	AllVideoCount int `mapstructure:"allVideoCount" json:"allVideoCount,omitempty" gorm:"column:allVideoCount;primary_key" bson:"allVideoCount,omitempty" dynamodbav:"allVideoCount,omitempty" firestore:"allVideoCount,omitempty"`
+}

@@ -1,6 +1,6 @@
 package models
 
-type Data struct {
+type DataCategory struct {
 	Id         string `mapstructure:"id" json:"id,omitempty" gorm:"column:id;primary_key" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"-"`
 	Title      string `mapstructure:"title" json:"title,omitempty" gorm:"column:title;primary_key" bson:"title,omitempty" dynamodbav:"title,omitempty" firestore:"title,omitempty"`
 	Assignable bool   `mapstructure:"assignable" json:"assignable,omitempty" gorm:"column:assignable;primary_key" bson:"assignable,omitempty" dynamodbav:"assignable,omitempty" firestore:"assignable,omitempty"`
@@ -9,5 +9,5 @@ type Data struct {
 
 type Categories struct {
 	Id   string `mapstructure:"id" json:"id,omitempty" gorm:"column:id;primary_key" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"-"`
-	Data []Data `mapstructure:"data" json:"data,omitempty" gorm:"column:data;primary_key" bson:"data,omitempty" dynamodbav:"data,omitempty" firestore:"data,omitempty"`
+	Data []DataCategory `mapstructure:"data" json:"data,omitempty" gorm:"column:data;primary_key" bson:"data,omitempty" dynamodbav:"data,omitempty" firestore:"data,omitempty"`
 }

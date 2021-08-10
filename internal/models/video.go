@@ -39,3 +39,11 @@ type Video struct {
 	PlaylistId           string     `mapstructure:"playlistId" json:"playlistId,omitempty" gorm:"column:playlistId;primary_key" bson:"playlistId,omitempty" dynamodbav:"playlistId,omitempty" firestore:"playlistId,omitempty"`
 	Position             int        `mapstructure:"position" json:"position,omitempty" gorm:"column:position;primary_key" bson:"position,omitempty" dynamodbav:"position,omitempty" firestore:"position,omitempty"`
 }
+
+type VideoResult struct {
+	Success   int`mapstructure:"success" json:"success,omitempty" gorm:"column:success;primary_key" bson:"success,omitempty" dynamodbav:"success,omitempty" firestore:"success,omitempty"`
+	Count     int`mapstructure:"count" json:"count,omitempty" gorm:"column:count;primary_key" bson:"count,omitempty" dynamodbav:"count,omitempty" firestore:"count,omitempty"`
+	All       int`mapstructure:"all" json:"all,omitempty" gorm:"column:all;primary_key" bson:"all,omitempty" dynamodbav:"all,omitempty" firestore:"position,omitempty"`
+	Videos    []string`mapstructure:"videos" json:"videos,omitempty" gorm:"column:videos;primary_key" bson:"videos,omitempty" dynamodbav:"videos,omitempty" firestore:"videos,omitempty"`
+	Timestamp *time.Time`mapstructure:"timestamp" json:"timestamp,omitempty" gorm:"column:timestamp;primary_key" bson:"timestamp,omitempty" dynamodbav:"timestamp,omitempty" firestore:"timestamp,omitempty"`
+}

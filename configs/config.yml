@@ -3,8 +3,8 @@ server:
   port: 8080
 
 mongo:
-  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
-  database: masterdata
+  uri: mongodb+srv://tube:abcd1234@cluster0.cirxd.mongodb.net/tube?retryWrites=true&w=majority
+  database: tube
 
 log:
   level: info
