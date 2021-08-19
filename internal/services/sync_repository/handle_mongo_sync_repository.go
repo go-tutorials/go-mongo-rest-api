@@ -22,17 +22,17 @@ type MongoVideoRepository struct {
 	PlaylistCollection      *mongo.Collection
 	PlaylistVideoCollection *mongo.Collection
 	VideoCollection         *mongo.Collection
-	CategoryCollection 		*mongo.Collection
+	CategoryCollection      *mongo.Collection
 }
 
-func NewMongoVideoRepository(db *mongo.Database, channelCollectionName string, channelSyncCollectionName string, playlistCollectionName string, playlistVideoCollectionName string, videoCollectionName string,categoryCollection string) *MongoVideoRepository {
+func NewMongoVideoRepository(db *mongo.Database, channelCollectionName string, channelSyncCollectionName string, playlistCollectionName string, playlistVideoCollectionName string, videoCollectionName string, categoryCollection string) *MongoVideoRepository {
 	return &MongoVideoRepository{
 		ChannelCollection:       db.Collection(channelCollectionName),
 		ChannelSyncCollection:   db.Collection(channelSyncCollectionName),
 		PlaylistCollection:      db.Collection(playlistCollectionName),
 		PlaylistVideoCollection: db.Collection(playlistVideoCollectionName),
 		VideoCollection:         db.Collection(videoCollectionName),
-		CategoryCollection: 	 db.Collection(categoryCollection),
+		CategoryCollection:      db.Collection(categoryCollection),
 	}
 }
 
@@ -91,9 +91,9 @@ func (m *MongoVideoRepository) GetVideoIds(ctx context.Context, ids []string) ([
 	for result.Next(ctx) {
 		var id string
 		if err := result.Decode(&id); err != nil {
-			if strings.Contains(err.Error(),"cannot decode invalid into") {
+			if strings.Contains(err.Error(), "cannot decode invalid into") {
 				break
-			}else{
+			} else {
 				return nil, err
 			}
 		}

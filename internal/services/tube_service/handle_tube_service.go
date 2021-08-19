@@ -276,7 +276,7 @@ func convertVideos(url string) (*ListResultVideos, error) {
 		if err != nil {
 			return nil, err
 		}
-		video.Duration = float32(duration)
+		video.Duration = int(duration)
 		video.Dimension = v.ContentDetails.Dimension
 		if v.ContentDetails.Definition == "hd" {
 			video.Definition = 5

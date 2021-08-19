@@ -14,5 +14,4 @@ type SyncRepository interface {
 	SaveVideos(ctx context.Context, videos []Video) (int, error)
 	SavePlaylistVideos(ctx context.Context, playlistId string, videos []string) (int, error)
 	GetVideoIds(ctx context.Context, id []string) ([]string, error)
-	//GetCagetories(regionCode string) (*[]VideoCategory,error )
 }

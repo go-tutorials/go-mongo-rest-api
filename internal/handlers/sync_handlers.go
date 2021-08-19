@@ -12,12 +12,12 @@ type SyncHandler struct {
 
 type ChannelId struct {
 	ChannelId string `json:"channelId,omitempty"`
-	Level int `json:"level,omitempty"`
+	Level     int    `json:"level,omitempty"`
 }
 
 type PlaylistId struct {
 	PlaylistId string `json:"playlistId,omitempty"`
-	Level int `json:"level,omitempty"`
+	Level      int    `json:"level,omitempty"`
 }
 
 func NewSyncHandler(syncService SyncService) *SyncHandler {

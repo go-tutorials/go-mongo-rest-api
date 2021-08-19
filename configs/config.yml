@@ -5,6 +5,13 @@ server:
 mongo:
   uri: mongodb+srv://tube:abcd1234@cluster0.cirxd.mongodb.net/tube?retryWrites=true&w=majority
   database: tube
+cassandra:
+  uri: 127.0.0.1
+  username: cassandra
+  password: cassandra
+postgre:
+  driver: postgres
+  data_source_name: user=postgres password=postgres dbname=tube sslmode=disable
 
 log:
   level: info

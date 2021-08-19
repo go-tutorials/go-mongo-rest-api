@@ -8,34 +8,34 @@ import (
 	"time"
 )
 
-type DefaultSyncService struct {
+type DefaultCassandraSyncService struct {
 	Client     *tube_service.YoutubeSyncClient
-	Repository *sync_repository.MongoVideoRepository
+	Repository *sync_repository.CassandraVideoRepository
 }
 
-func NewDefaultSyncService(client *tube_service.YoutubeSyncClient, mongoRepository *sync_repository.MongoVideoRepository) *DefaultSyncService {
-	return &DefaultSyncService{Client: client, Repository: mongoRepository}
+func NewDefaultCassandraSyncService(client *tube_service.YoutubeSyncClient, cassandraRepository *sync_repository.CassandraVideoRepository) *DefaultCassandraSyncService {
+	return &DefaultCassandraSyncService{Client: client, Repository: cassandraRepository}
 }
 
-func (d *DefaultSyncService) SyncChannel(ctx context.Context, channelId string) (int, error) {
-	return syncChannel(ctx, d, channelId)
+func (d *DefaultCassandraSyncService) SyncChannel(ctx context.Context, channelId string) (int, error) {
+	return syncChannelCassandra(ctx, d, channelId)
 }
 
-func (d *DefaultSyncService) SyncPlaylist(ctx context.Context,playlistId string, level *int) (int,error) {
+func (d *DefaultCassandraSyncService) SyncPlaylist(ctx context.Context, playlistId string, level *int) (int, error) {
 	var syncVideos bool
 	if level != nil && *level < 2 {
 		syncVideos = false
-	}else{
+	} else {
 		syncVideos = true
 	}
-	return syncPlaylist(ctx,playlistId, syncVideos, d)
+	return syncPlaylistCassandra(ctx, playlistId, syncVideos, d)
 }
 
-func syncChannel(ctx context.Context, d *DefaultSyncService, channelId string) (int, error) {
+func syncChannelCassandra(ctx context.Context, d *DefaultCassandraSyncService, channelId string) (int, error) {
 	ChannelSync := make(chan *ChannelSync)
-	errChannelSync :=  make(chan error)
+	errChannelSync := make(chan error)
 	Channel := make(chan *Channel)
-	errChannel :=  make(chan error)
+	errChannel := make(chan error)
 	go func() {
 		result, err := d.Repository.GetChannelSync(ctx, channelId)
 		ChannelSync <- result
@@ -46,9 +46,9 @@ func syncChannel(ctx context.Context, d *DefaultSyncService, channelId string) (
 		Channel <- result
 		errChannel <- err
 	}()
-	resultChannelSync := <- ChannelSync
-	resultChannel := <- Channel
-	er0 := <- errChannelSync
+	resultChannelSync := <-ChannelSync
+	resultChannel := <-Channel
+	er0 := <-errChannelSync
 	er1 := <-errChannel
 	if er0 != nil {
 		return 0, er0
@@ -56,14 +56,14 @@ func syncChannel(ctx context.Context, d *DefaultSyncService, channelId string) (
 	if er1 != nil {
 		return 0, er1
 	}
-	result, er2 := checkAndSyncUpload(ctx, resultChannelSync, resultChannel, d)
+	result, er2 := checkAndSyncUploadCassandra(ctx, resultChannelSync, resultChannel, d)
 	if er2 != nil {
 		return 0, er2
 	}
 	return result, er2
 }
 
-func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *Channel, d *DefaultSyncService) (int, error) {
+func checkAndSyncUploadCassandra(ctx context.Context, channelSync *ChannelSync, channel *Channel, d *DefaultCassandraSyncService) (int, error) {
 	if len(channel.Uploads) == 0 {
 		return 0, nil
 	} else {
@@ -91,19 +91,19 @@ func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *
 		resultChan := make(chan *PlaylistResult)
 		er2Chan := make(chan error)
 		go func() {
-			res, err := syncUploads(ctx, channel.Uploads, d, timestamp)
+			res, err := syncUploadsCassandra(ctx, channel.Uploads, d, timestamp)
 			rChan <- res
 			er1Chan <- err
 		}()
 		go func() {
-			res, err := syncChannelPlaylists(ctx, channel.Id, syncVideos, syncCollection, d)
+			res, err := syncChannelPlaylistsCassandra(ctx, channel.Id, syncVideos, syncCollection, d)
 			resultChan <- res
 			er2Chan <- err
 		}()
-		r := <- rChan
-		er1 := <-  er1Chan
+		r := <-rChan
+		er1 := <-er1Chan
 		result := <-resultChan
-		er2 := <- er2Chan
+		er2 := <-er2Chan
 		if er1 != nil {
 			return 0, er1
 		}
@@ -111,13 +111,13 @@ func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *
 			return 0, er2
 		}
 		channel.LastUpload = r.Timestamp
-		channel.Count = int16(r.Count)
-		channel.ItemCount = int16(r.All)
+		channel.Count = r.Count
+		channel.ItemCount = r.All
 		if syncCollection {
-			channel.PlaylistCount = int16(result.Count)
-			channel.PlaylistItemCount = int16(result.All)
-			channel.PlaylistVideoCount = int16(result.VideoCount)
-			channel.PlaylistVideoItemCount = int16(result.AllVideoCount)
+			channel.PlaylistCount = result.Count
+			channel.PlaylistItemCount = result.All
+			channel.PlaylistVideoCount = result.VideoCount
+			channel.PlaylistVideoItemCount = result.AllVideoCount
 		}
 		channelSync := ChannelSync{
 			Id:       channel.Id,
@@ -130,7 +130,7 @@ func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *
 			er3Chan <- err
 		}()
 		res, er4 := d.Repository.SaveChannelSync(ctx, channelSync)
-		er3 := <- er3Chan
+		er3 := <-er3Chan
 		if er3 != nil {
 			return 0, er3
 		}
@@ -141,7 +141,7 @@ func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *
 	}
 }
 
-func syncChannelPlaylists(ctx context.Context, channelId string, syncVideos bool, saveCollection bool, d *DefaultSyncService) (*PlaylistResult, error) {
+func syncChannelPlaylistsCassandra(ctx context.Context, channelId string, syncVideos bool, saveCollection bool, d *DefaultCassandraSyncService) (*PlaylistResult, error) {
 	nextPageToken := ""
 	flag := true
 	count := 0
@@ -170,17 +170,17 @@ func syncChannelPlaylists(ctx context.Context, channelId string, syncVideos bool
 			er1Chan <- err
 		}()
 		go func() {
-			_,err := syncVideosOfPlaylists(ctx, playlistIds, syncVideos, saveCollection, d)
+			_, err := syncVideosOfPlaylistsCassandra(ctx, playlistIds, syncVideos, saveCollection, d)
 			er2Chan <- err
 		}()
 		//_,er2 := syncVideosOfPlaylists(ctx, playlistIds, syncVideos, saveCollection, d)
-		er1 :=<- er1Chan
+		er1 := <-er1Chan
 		if er1 != nil {
 			return nil, er1
 		}
-		er2 := <- er2Chan
-		if er2 !=nil {
-			return  nil, er2
+		er2 := <-er2Chan
+		if er2 != nil {
+			return nil, er2
 		}
 	}
 	return &PlaylistResult{
@@ -190,7 +190,7 @@ func syncChannelPlaylists(ctx context.Context, channelId string, syncVideos bool
 	}, nil
 }
 
-func syncUploads(ctx context.Context, uploads string, d *DefaultSyncService, timestamp *time.Time) (*VideoResult, error) {
+func syncUploadsCassandra(ctx context.Context, uploads string, d *DefaultCassandraSyncService, timestamp *time.Time) (*VideoResult, error) {
 	nextPageToken := ""
 	flag := true
 	success := 0
@@ -217,7 +217,7 @@ func syncUploads(ctx context.Context, uploads string, d *DefaultSyncService, tim
 		if nextPageToken == "" {
 			flag = false
 		}
-		r, er2 := saveVideos(ctx, newVideos, d)
+		r, er2 := saveVideosCassandra(ctx, newVideos, d)
 		if er2 != nil {
 			return nil, er2
 		}
@@ -229,35 +229,13 @@ func syncUploads(ctx context.Context, uploads string, d *DefaultSyncService, tim
 	return &videoResult, nil
 }
 
-func getNewVideos(videos []PlaylistVideo, lastSynchronizedTime *time.Time) []PlaylistVideo {
-	if lastSynchronizedTime == nil {
-		return videos
-	}
-	timestamp := addSeconds(lastSynchronizedTime, -1800)
-	t := int(timestamp.Unix())
-	var newVideos []PlaylistVideo
-	for _, i := range videos {
-		if int(i.PublishedAt.Unix()) >= t {
-			newVideos = append(newVideos, i)
-		} else {
-			return newVideos
-		}
-	}
-	return newVideos
-}
-
-func addSeconds(date *time.Time, number int) *time.Time {
-	newDate := time.Date(date.Year(), date.Month(), date.Day(), date.Hour(), date.Minute(), date.Second()-number, date.Nanosecond(), date.Location())
-	return &newDate
-}
-
-func saveVideos(ctx context.Context, newVideos []PlaylistVideo, d *DefaultSyncService) (int, error) {
+func saveVideosCassandra(ctx context.Context, newVideos []PlaylistVideo, d *DefaultCassandraSyncService) (int, error) {
 	if len(newVideos) == 0 || newVideos == nil {
 		return 0, nil
 	} else {
 		if d == nil {
-			return  len(newVideos), nil
-		}else{
+			return len(newVideos), nil
+		} else {
 			if d == nil {
 				return len(newVideos), nil
 			} else {
@@ -292,11 +270,11 @@ func saveVideos(ctx context.Context, newVideos []PlaylistVideo, d *DefaultSyncSe
 	}
 }
 
-func syncVideosOfPlaylists(ctx context.Context, playlistIds []string, syncVideos bool, saveCollection bool, d *DefaultSyncService) (int, error) {
+func syncVideosOfPlaylistsCassandra(ctx context.Context, playlistIds []string, syncVideos bool, saveCollection bool, d *DefaultCassandraSyncService) (int, error) {
 	sum := 0
 	if saveCollection {
 		for _, v := range playlistIds {
-			resPlaylistVideos, er0 := syncPlaylistVideos(ctx, v, syncVideos, d)
+			resPlaylistVideos, er0 := syncPlaylistVideosCassandra(ctx, v, syncVideos, d)
 			if er0 != nil {
 				return 0, er0
 			}
@@ -309,7 +287,7 @@ func syncVideosOfPlaylists(ctx context.Context, playlistIds []string, syncVideos
 		return sum, nil
 	} else {
 		for _, v := range playlistIds {
-			resPlaylistVideos, er0 := syncPlaylistVideos(ctx, v, syncVideos, d)
+			resPlaylistVideos, er0 := syncPlaylistVideosCassandra(ctx, v, syncVideos, d)
 			if er0 != nil {
 				return 0, er0
 			}
@@ -319,7 +297,7 @@ func syncVideosOfPlaylists(ctx context.Context, playlistIds []string, syncVideos
 	}
 }
 
-func syncPlaylistVideos(ctx context.Context, playlistId string, syncVideos bool, d *DefaultSyncService) (*VideoResult, error) {
+func syncPlaylistVideosCassandra(ctx context.Context, playlistId string, syncVideos bool, d *DefaultCassandraSyncService) (*VideoResult, error) {
 	nextPageToken := ""
 	flag := true
 	success := 0
@@ -336,13 +314,13 @@ func syncPlaylistVideos(ctx context.Context, playlistId string, syncVideos bool,
 			videoIds = append(videoIds, v.Id)
 		}
 		newVideoIds = append(newVideoIds, videoIds...)
-		var def *DefaultSyncService
+		var def *DefaultCassandraSyncService
 		if syncVideos {
 			def = d
-		}else{
+		} else {
 			def = nil
 		}
-		r, er1 := saveVideos(ctx, playlistVideos.List, def)
+		r, er1 := saveVideosCassandra(ctx, playlistVideos.List, def)
 		if er1 != nil {
 			return nil, er1
 		}
@@ -359,28 +337,28 @@ func syncPlaylistVideos(ctx context.Context, playlistId string, syncVideos bool,
 	}, nil
 }
 
-func syncPlaylist(ctx context.Context,playlistId string, syncVideos bool, d *DefaultSyncService) (int,error) {
+func syncPlaylistCassandra(ctx context.Context, playlistId string, syncVideos bool, d *DefaultCassandraSyncService) (int, error) {
 	resChan := make(chan *VideoResult)
 	er0Chan := make(chan error)
 	playlistChan := make(chan *Playlist)
 	er1Chan := make(chan error)
 	go func() {
-		res,err := syncPlaylistVideos(ctx,playlistId, syncVideos, d);
+		res, err := syncPlaylistVideosCassandra(ctx, playlistId, syncVideos, d)
 		resChan <- res
 		er0Chan <- err
 	}()
 	go func() {
-		playlist,err := d.Client.GetPlaylist(playlistId)
+		playlist, err := d.Client.GetPlaylist(playlistId)
 		playlistChan <- playlist
 		er1Chan <- err
 	}()
-	res := <- resChan
-	er0 := <- er0Chan
+	res := <-resChan
+	er0 := <-er0Chan
 	if er0 != nil {
 		return 0, er0
 	}
 	playlist := <-playlistChan
-	er1 := <- er1Chan
+	er1 := <-er1Chan
 	if er1 != nil {
 		return 0, er1
 	}
@@ -389,41 +367,21 @@ func syncPlaylist(ctx context.Context,playlistId string, syncVideos bool, d *Def
 	er2Chan := make(chan error)
 	er3Chan := make(chan error)
 	go func() {
-		_,err := d.Repository.SavePlaylist(ctx,*playlist)
+		_, err := d.Repository.SavePlaylist(ctx, *playlist)
 		er2Chan <- err
 	}()
 	go func() {
-		_,err := d.Repository.SavePlaylistVideos(ctx,playlist.Id,res.Videos)
+		_, err := d.Repository.SavePlaylistVideos(ctx, playlist.Id, res.Videos)
 		er3Chan <- err
 	}()
 	//_,er3 := d.Repository.SavePlaylistVideos(ctx,playlist.Id,res.Videos)
-	er2 := <- er2Chan
-	er3 := <- er3Chan
+	er2 := <-er2Chan
+	er3 := <-er3Chan
 	if er2 != nil {
 		return 0, er2
 	}
 	if er3 != nil {
 		return 0, er3
 	}
-	return res.Success,nil
-}
-
-func notIn(ids []string, subIds []string) []string {
-	var newIds []string
-	if len(subIds) == 0 {
-		return ids
-	}
-	for _, v := range ids {
-		flag := false
-		for _, v1 := range subIds {
-			if v == v1 {
-				flag = true
-				break
-			}
-		}
-		if !flag {
-			newIds = append(newIds, v)
-		}
-	}
-	return newIds
+	return res.Success, nil
 }
