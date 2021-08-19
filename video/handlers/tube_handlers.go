@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	. "go-service/internal/services/tube_service"
+	. "go-service/video"
 	"log"
 	"net/http"
 	"strconv"

@@ -1,16 +1,15 @@
-package tube_service
+package youtube
 
 import (
 	"encoding/json"
 	"fmt"
+	. "go-service/video/models"
+	. "go-service/video/youtube/models"
 	"io/ioutil"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
-
-	. "go-service/internal/models"
-	. "go-service/internal/models_tube"
-	"net/http"
 )
 
 type YoutubeSyncClient struct {

@@ -1,11 +1,10 @@
-package sync_repository
+package sync_cassandra
 
 import (
 	"context"
 	"fmt"
 	"github.com/gocql/gocql"
-	. "go-service/internal/models"
-	"log"
+	. "go-service/video/models"
 	"strconv"
 	"strings"
 )
@@ -68,7 +67,6 @@ func (c *CassandraVideoRepository) GetVideoIds(ctx context.Context, ids []string
 	for rows.Scan(&id) {
 		result = append(result, id)
 	}
-	log.Println(result)
 	return result, nil
 }
 
@@ -79,7 +77,6 @@ func (c *CassandraVideoRepository) SaveVideos(ctx context.Context, videos []Vide
 	}
 	batch := session.NewBatch(gocql.UnloggedBatch).WithContext(ctx)
 	stmt := "INSERT INTO video (id,caption,categoryId,channelId,channelTitle,defaultAudioLanguage,defaultLanguage,definition,description,dimension,duration,highThumbnail,licensedContent,liveBroadcastContent,localizedDescription,localizedTitle,maxresThumbnail,mediumThumbnail,projection,publishedAt,standardThumbnail,tags,thumbnail,title,blockedRegions,allowedRegions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	errChan := make(chan error)
 	for i := 0; i < len(videos); i++ {
 		caption, err := strconv.ParseBool(videos[i].Caption)
 		if err != nil {
@@ -90,21 +87,13 @@ func (c *CassandraVideoRepository) SaveVideos(ctx context.Context, videos []Vide
 			Args:       []interface{}{videos[i].Id, caption, videos[i].CategoryId, videos[i].ChannelId, videos[i].ChannelTitle, videos[i].DefaultAudioLanguage, videos[i].DefaultLanguage, videos[i].Definition, videos[i].Description, videos[i].Dimension, videos[i].Duration, videos[i].HighThumbnail, videos[i].LicensedContent, videos[i].LiveBroadcastContent, videos[i].LocalizedDescription, videos[i].LocalizedTitle, videos[i].MaxresThumbnail, videos[i].MediumThumbnail, videos[i].Projection, videos[i].PublishedAt, videos[i].StandardThumbnail, videos[i].Tags, videos[i].Thumbnail, videos[i].Title, videos[i].BlockedRegions, videos[i].AllowedRegions},
 			Idempotent: true,
 		})
-		if i%5 == 0 || i == len(videos) && i != 0 {
-			go func() {
-				err := session.ExecuteBatch(batch)
-				if err != nil {
-					errChan <- err
-				}
-				if i == len(videos) {
-					errChan <- nil
-				}
-			}()
+		if i%5 == 0 || i == len(videos)-1 {
+			err := session.ExecuteBatch(batch)
+			if err != nil {
+				return 0, err
+			}
 			batch = session.NewBatch(gocql.UnloggedBatch).WithContext(ctx)
 		}
-	}
-	if err := <-errChan; err != nil {
-		return 0, err
 	}
 	return 1, nil
 }
@@ -116,17 +105,20 @@ func (c *CassandraVideoRepository) SavePlaylists(ctx context.Context, playlists 
 	}
 	batch := session.NewBatch(gocql.UnloggedBatch).WithContext(ctx)
 	stmt := "INSERT INTO playlist (id,channelId,channelTitle,count,itemCount,description,highThumbnail,localizedDescription,localizedTitle,maxresThumbnail,mediumThumbnail,publishedAt,standardThumbnail,thumbnail,title) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	for _, playlist := range playlists {
+	for i, playlist := range playlists {
 		//batch.Query(stmt, playlist.Id, playlist.ChannelId, playlist.ChannelTitle, playlist.Count, playlist.ItemCount, playlist.Description, playlist.HighThumbnail, playlist.LocalizedDescription, playlist.LocalizedTitle, playlist.MaxresThumbnail, playlist.MediumThumbnail, playlist.PublishedAt, playlist.StandardThumbnail, playlist.Thumbnail, playlist.Title)
 		batch.Entries = append(batch.Entries, gocql.BatchEntry{
 			Stmt:       stmt,
 			Args:       []interface{}{playlist.Id, playlist.ChannelId, playlist.ChannelTitle, playlist.Count, playlist.ItemCount, playlist.Description, playlist.HighThumbnail, playlist.LocalizedDescription, playlist.LocalizedTitle, playlist.MaxresThumbnail, playlist.MediumThumbnail, playlist.PublishedAt, playlist.StandardThumbnail, playlist.Thumbnail, playlist.Title},
 			Idempotent: true,
 		})
-	}
-	err := session.ExecuteBatch(batch)
-	if err != nil {
-		return 0, err
+		if i%5 == 0 || i == len(playlists)-1 {
+			err := session.ExecuteBatch(batch)
+			if err != nil {
+				return 0, err
+			}
+			batch = session.NewBatch(gocql.UnloggedBatch).WithContext(ctx)
+		}
 	}
 	return 1, nil
 }
@@ -173,4 +165,3 @@ func (c *CassandraVideoRepository) SavePlaylist(ctx context.Context, playlist Pl
 	}
 	return 1, nil
 }
-

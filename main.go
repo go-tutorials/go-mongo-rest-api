@@ -11,7 +11,7 @@ import (
 	mid "github.com/core-go/log/middleware"
 	"github.com/gorilla/mux"
 
-	"go-service/internal/app"
+	"go-service/video/app"
 )
 
 func main() {

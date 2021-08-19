@@ -1,8 +1,8 @@
-package sync_repository
+package video
 
 import (
 	"context"
-	. "go-service/internal/models"
+	. "go-service/video/models"
 )
 
 type SyncRepository interface {

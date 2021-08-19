@@ -1,10 +1,10 @@
-package tube_category_service
+package youtube
 
 import (
 	"encoding/json"
 	"fmt"
-	"go-service/internal/models"
-	"go-service/internal/models_tube"
+	"go-service/video/models"
+	models_tube "go-service/video/youtube/models"
 	"io/ioutil"
 	"net/http"
 )
@@ -21,7 +21,7 @@ func (c *CategoryTubeClient) GetCagetories(regionCode string) (*[]models.DataCat
 	if len(regionCode) <= 0 {
 		regionCode = "US"
 	}
-	url := fmt.Sprintf(`https://www.googleapis.com/youtube/v3/videoCategories?key=%s&regionCode=%s`,c.Key,regionCode)
+	url := fmt.Sprintf(`https://www.googleapis.com/youtube/v3/videoCategories?key=%s&regionCode=%s`, c.Key, regionCode)
 	res, err := convertCategory(url)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (c *CategoryTubeClient) GetCagetories(regionCode string) (*[]models.DataCat
 	return res, err
 }
 
-func convertCategory(url string) (*[]models.DataCategory,error) {
+func convertCategory(url string) (*[]models.DataCategory, error) {
 	resp, er0 := http.Get(url)
 	if er0 != nil {
 		return nil, er0
@@ -54,5 +54,5 @@ func convertCategory(url string) (*[]models.DataCategory,error) {
 		category.Assignable = v.Snippet.Assignable
 		categories = append(categories, category)
 	}
-	return &categories,nil
+	return &categories, nil
 }

@@ -8,6 +8,6 @@ type DataCategory struct {
 }
 
 type Categories struct {
-	Id   string `mapstructure:"id" json:"id,omitempty" gorm:"column:id;primary_key" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"-"`
+	Id   string         `mapstructure:"id" json:"id,omitempty" gorm:"column:id;primary_key" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"-"`
 	Data []DataCategory `mapstructure:"data" json:"data,omitempty" gorm:"column:data;primary_key" bson:"data,omitempty" dynamodbav:"data,omitempty" firestore:"data,omitempty"`
 }

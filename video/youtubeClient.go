@@ -1,7 +1,7 @@
-package tube_service
+package video
 
 import (
-	. "go-service/internal/models"
+	. "go-service/video/models"
 )
 
 type SyncClient interface {

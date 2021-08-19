@@ -1,9 +1,9 @@
-package sync_repository
+package sync_mongo
 
 import (
 	"context"
 	"fmt"
-	. "go-service/internal/models"
+	. "go-service/video/models"
 	"reflect"
 	"strings"
 

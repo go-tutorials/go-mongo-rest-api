@@ -2,7 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	. "go-service/internal/services/sync_service"
+	"fmt"
+	. "go-service/video"
 	"net/http"
 )
 
@@ -38,7 +39,7 @@ func (h *SyncHandler) SyncChannel(w http.ResponseWriter, r *http.Request) {
 	}
 	result := ""
 	if resultChannel > 0 {
-		result = "Sync channel successfully"
+		result = fmt.Sprintf(`Sync %d channel successfully`, resultChannel)
 	} else {
 		result = "Invalid channel to sync"
 	}

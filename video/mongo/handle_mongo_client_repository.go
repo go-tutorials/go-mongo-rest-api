@@ -1,11 +1,11 @@
-package client_repository
+package mongo
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"go-service/internal/models"
-	"go-service/internal/services/tube_category_service"
+	"go-service/video/models"
+	"go-service/video/youtube"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,10 +22,10 @@ type MongoVideoService struct {
 	PlaylistVideoCollection *mongo.Collection
 	VideoCollection         *mongo.Collection
 	CategoryCollection      *mongo.Collection
-	TubeCategory            tube_category_service.CategoryTubeClient
+	TubeCategory            youtube.CategoryTubeClient
 }
 
-func NewMongoVideoService(db *mongo.Database, channelCollectionName string, channelSyncCollectionName string, playlistCollectionName string, playlistVideoCollectionName string, videoCollectionName string, categoryCollection string, TubeCategory tube_category_service.CategoryTubeClient) *MongoVideoService {
+func NewMongoVideoService(db *mongo.Database, channelCollectionName string, channelSyncCollectionName string, playlistCollectionName string, playlistVideoCollectionName string, videoCollectionName string, categoryCollection string, TubeCategory youtube.CategoryTubeClient) *MongoVideoService {
 	return &MongoVideoService{
 		ChannelCollection:       db.Collection(channelCollectionName),
 		ChannelSyncCollection:   db.Collection(channelSyncCollectionName),

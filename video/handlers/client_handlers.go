@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gorilla/mux"
-	"go-service/internal/models"
-	. "go-service/internal/services/client_repository"
+	. "go-service/video"
+	"go-service/video/models"
 	"log"
 	"net/http"
 	"strconv"

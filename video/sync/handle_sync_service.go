@@ -1,37 +1,37 @@
-package sync_service
+package sync
 
 import (
 	"context"
-	. "go-service/internal/models"
-	"go-service/internal/services/sync_repository"
-	"go-service/internal/services/tube_service"
+	"go-service/video"
+	. "go-service/video/models"
+	"go-service/video/youtube"
 	"time"
 )
 
-type DefaultCassandraSyncService struct {
-	Client     *tube_service.YoutubeSyncClient
-	Repository *sync_repository.CassandraVideoRepository
+type DefaultMongoSyncService struct {
+	Client     *youtube.YoutubeSyncClient
+	Repository video.SyncRepository
 }
 
-func NewDefaultCassandraSyncService(client *tube_service.YoutubeSyncClient, cassandraRepository *sync_repository.CassandraVideoRepository) *DefaultCassandraSyncService {
-	return &DefaultCassandraSyncService{Client: client, Repository: cassandraRepository}
+func NewDefaultSyncService(client *youtube.YoutubeSyncClient, repository video.SyncRepository) *DefaultMongoSyncService {
+	return &DefaultMongoSyncService{Client: client, Repository: repository}
 }
 
-func (d *DefaultCassandraSyncService) SyncChannel(ctx context.Context, channelId string) (int, error) {
-	return syncChannelCassandra(ctx, d, channelId)
+func (d *DefaultMongoSyncService) SyncChannel(ctx context.Context, channelId string) (int, error) {
+	return syncChannel(ctx, d, channelId)
 }
 
-func (d *DefaultCassandraSyncService) SyncPlaylist(ctx context.Context, playlistId string, level *int) (int, error) {
+func (d *DefaultMongoSyncService) SyncPlaylist(ctx context.Context, playlistId string, level *int) (int, error) {
 	var syncVideos bool
 	if level != nil && *level < 2 {
 		syncVideos = false
 	} else {
 		syncVideos = true
 	}
-	return syncPlaylistCassandra(ctx, playlistId, syncVideos, d)
+	return syncPlaylist(ctx, playlistId, syncVideos, d)
 }
 
-func syncChannelCassandra(ctx context.Context, d *DefaultCassandraSyncService, channelId string) (int, error) {
+func syncChannel(ctx context.Context, d *DefaultMongoSyncService, channelId string) (int, error) {
 	ChannelSync := make(chan *ChannelSync)
 	errChannelSync := make(chan error)
 	Channel := make(chan *Channel)
@@ -56,14 +56,14 @@ func syncChannelCassandra(ctx context.Context, d *DefaultCassandraSyncService, c
 	if er1 != nil {
 		return 0, er1
 	}
-	result, er2 := checkAndSyncUploadCassandra(ctx, resultChannelSync, resultChannel, d)
+	result, er2 := checkAndSyncUpload(ctx, resultChannelSync, resultChannel, d)
 	if er2 != nil {
 		return 0, er2
 	}
 	return result, er2
 }
 
-func checkAndSyncUploadCassandra(ctx context.Context, channelSync *ChannelSync, channel *Channel, d *DefaultCassandraSyncService) (int, error) {
+func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *Channel, d *DefaultMongoSyncService) (int, error) {
 	if len(channel.Uploads) == 0 {
 		return 0, nil
 	} else {
@@ -91,12 +91,12 @@ func checkAndSyncUploadCassandra(ctx context.Context, channelSync *ChannelSync, 
 		resultChan := make(chan *PlaylistResult)
 		er2Chan := make(chan error)
 		go func() {
-			res, err := syncUploadsCassandra(ctx, channel.Uploads, d, timestamp)
+			res, err := syncUploads(ctx, channel.Uploads, d, timestamp)
 			rChan <- res
 			er1Chan <- err
 		}()
 		go func() {
-			res, err := syncChannelPlaylistsCassandra(ctx, channel.Id, syncVideos, syncCollection, d)
+			res, err := syncChannelPlaylists(ctx, channel.Id, syncVideos, syncCollection, d)
 			resultChan <- res
 			er2Chan <- err
 		}()
@@ -141,7 +141,7 @@ func checkAndSyncUploadCassandra(ctx context.Context, channelSync *ChannelSync, 
 	}
 }
 
-func syncChannelPlaylistsCassandra(ctx context.Context, channelId string, syncVideos bool, saveCollection bool, d *DefaultCassandraSyncService) (*PlaylistResult, error) {
+func syncChannelPlaylists(ctx context.Context, channelId string, syncVideos bool, saveCollection bool, d *DefaultMongoSyncService) (*PlaylistResult, error) {
 	nextPageToken := ""
 	flag := true
 	count := 0
@@ -170,7 +170,7 @@ func syncChannelPlaylistsCassandra(ctx context.Context, channelId string, syncVi
 			er1Chan <- err
 		}()
 		go func() {
-			_, err := syncVideosOfPlaylistsCassandra(ctx, playlistIds, syncVideos, saveCollection, d)
+			_, err := syncVideosOfPlaylists(ctx, playlistIds, syncVideos, saveCollection, d)
 			er2Chan <- err
 		}()
 		//_,er2 := syncVideosOfPlaylists(ctx, playlistIds, syncVideos, saveCollection, d)
@@ -190,7 +190,7 @@ func syncChannelPlaylistsCassandra(ctx context.Context, channelId string, syncVi
 	}, nil
 }
 
-func syncUploadsCassandra(ctx context.Context, uploads string, d *DefaultCassandraSyncService, timestamp *time.Time) (*VideoResult, error) {
+func syncUploads(ctx context.Context, uploads string, d *DefaultMongoSyncService, timestamp *time.Time) (*VideoResult, error) {
 	nextPageToken := ""
 	flag := true
 	success := 0
@@ -217,7 +217,7 @@ func syncUploadsCassandra(ctx context.Context, uploads string, d *DefaultCassand
 		if nextPageToken == "" {
 			flag = false
 		}
-		r, er2 := saveVideosCassandra(ctx, newVideos, d)
+		r, er2 := saveVideos(ctx, newVideos, d)
 		if er2 != nil {
 			return nil, er2
 		}
@@ -229,7 +229,29 @@ func syncUploadsCassandra(ctx context.Context, uploads string, d *DefaultCassand
 	return &videoResult, nil
 }
 
-func saveVideosCassandra(ctx context.Context, newVideos []PlaylistVideo, d *DefaultCassandraSyncService) (int, error) {
+func getNewVideos(videos []PlaylistVideo, lastSynchronizedTime *time.Time) []PlaylistVideo {
+	if lastSynchronizedTime == nil {
+		return videos
+	}
+	timestamp := addSeconds(lastSynchronizedTime, -1800)
+	t := int(timestamp.Unix())
+	var newVideos []PlaylistVideo
+	for _, i := range videos {
+		if int(i.PublishedAt.Unix()) >= t {
+			newVideos = append(newVideos, i)
+		} else {
+			return newVideos
+		}
+	}
+	return newVideos
+}
+
+func addSeconds(date *time.Time, number int) *time.Time {
+	newDate := time.Date(date.Year(), date.Month(), date.Day(), date.Hour(), date.Minute(), date.Second()-number, date.Nanosecond(), date.Location())
+	return &newDate
+}
+
+func saveVideos(ctx context.Context, newVideos []PlaylistVideo, d *DefaultMongoSyncService) (int, error) {
 	if len(newVideos) == 0 || newVideos == nil {
 		return 0, nil
 	} else {
@@ -270,11 +292,11 @@ func saveVideosCassandra(ctx context.Context, newVideos []PlaylistVideo, d *Defa
 	}
 }
 
-func syncVideosOfPlaylistsCassandra(ctx context.Context, playlistIds []string, syncVideos bool, saveCollection bool, d *DefaultCassandraSyncService) (int, error) {
+func syncVideosOfPlaylists(ctx context.Context, playlistIds []string, syncVideos bool, saveCollection bool, d *DefaultMongoSyncService) (int, error) {
 	sum := 0
 	if saveCollection {
 		for _, v := range playlistIds {
-			resPlaylistVideos, er0 := syncPlaylistVideosCassandra(ctx, v, syncVideos, d)
+			resPlaylistVideos, er0 := syncPlaylistVideos(ctx, v, syncVideos, d)
 			if er0 != nil {
 				return 0, er0
 			}
@@ -287,7 +309,7 @@ func syncVideosOfPlaylistsCassandra(ctx context.Context, playlistIds []string, s
 		return sum, nil
 	} else {
 		for _, v := range playlistIds {
-			resPlaylistVideos, er0 := syncPlaylistVideosCassandra(ctx, v, syncVideos, d)
+			resPlaylistVideos, er0 := syncPlaylistVideos(ctx, v, syncVideos, d)
 			if er0 != nil {
 				return 0, er0
 			}
@@ -297,7 +319,7 @@ func syncVideosOfPlaylistsCassandra(ctx context.Context, playlistIds []string, s
 	}
 }
 
-func syncPlaylistVideosCassandra(ctx context.Context, playlistId string, syncVideos bool, d *DefaultCassandraSyncService) (*VideoResult, error) {
+func syncPlaylistVideos(ctx context.Context, playlistId string, syncVideos bool, d *DefaultMongoSyncService) (*VideoResult, error) {
 	nextPageToken := ""
 	flag := true
 	success := 0
@@ -314,13 +336,13 @@ func syncPlaylistVideosCassandra(ctx context.Context, playlistId string, syncVid
 			videoIds = append(videoIds, v.Id)
 		}
 		newVideoIds = append(newVideoIds, videoIds...)
-		var def *DefaultCassandraSyncService
+		var def *DefaultMongoSyncService
 		if syncVideos {
 			def = d
 		} else {
 			def = nil
 		}
-		r, er1 := saveVideosCassandra(ctx, playlistVideos.List, def)
+		r, er1 := saveVideos(ctx, playlistVideos.List, def)
 		if er1 != nil {
 			return nil, er1
 		}
@@ -337,13 +359,13 @@ func syncPlaylistVideosCassandra(ctx context.Context, playlistId string, syncVid
 	}, nil
 }
 
-func syncPlaylistCassandra(ctx context.Context, playlistId string, syncVideos bool, d *DefaultCassandraSyncService) (int, error) {
+func syncPlaylist(ctx context.Context, playlistId string, syncVideos bool, d *DefaultMongoSyncService) (int, error) {
 	resChan := make(chan *VideoResult)
 	er0Chan := make(chan error)
 	playlistChan := make(chan *Playlist)
 	er1Chan := make(chan error)
 	go func() {
-		res, err := syncPlaylistVideosCassandra(ctx, playlistId, syncVideos, d)
+		res, err := syncPlaylistVideos(ctx, playlistId, syncVideos, d)
 		resChan <- res
 		er0Chan <- err
 	}()
@@ -384,4 +406,24 @@ func syncPlaylistCassandra(ctx context.Context, playlistId string, syncVideos bo
 		return 0, er3
 	}
 	return res.Success, nil
+}
+
+func notIn(ids []string, subIds []string) []string {
+	var newIds []string
+	if len(subIds) == 0 {
+		return ids
+	}
+	for _, v := range ids {
+		flag := false
+		for _, v1 := range subIds {
+			if v == v1 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			newIds = append(newIds, v)
+		}
+	}
+	return newIds
 }
