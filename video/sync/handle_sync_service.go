@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"go-service/video"
 	. "go-service/video/models"
 	"go-service/video/youtube"
@@ -21,6 +22,35 @@ func (d *DefaultMongoSyncService) SyncChannel(ctx context.Context, channelId str
 	return syncChannel(ctx, d, channelId)
 }
 
+func (d *DefaultMongoSyncService) SyncChannels(ctx context.Context, channelIds []string) (int, error) {
+	resChan := make(chan int)
+	errChan := make(chan error)
+	tam := 0
+	for i, v := range channelIds {
+		k := i
+		a := v
+		go func() {
+			resC, err := d.SyncChannel(ctx, a)
+			tam += resC
+			fmt.Println(tam)
+			if err != nil {
+				resChan <- 0
+				errChan <- err
+			}
+			if tam == k {
+				resChan <- tam
+				errChan <- nil
+			}
+		}()
+	}
+	res := <-resChan
+	err := <-errChan
+	if err != nil {
+		return 0, err
+	}
+	return res, err
+}
+
 func (d *DefaultMongoSyncService) SyncPlaylist(ctx context.Context, playlistId string, level *int) (int, error) {
 	var syncVideos bool
 	if level != nil && *level < 2 {
@@ -29,6 +59,25 @@ func (d *DefaultMongoSyncService) SyncPlaylist(ctx context.Context, playlistId s
 		syncVideos = true
 	}
 	return syncPlaylist(ctx, playlistId, syncVideos, d)
+}
+
+func (d *DefaultMongoSyncService) GetSubscriptions(ctx context.Context, channelId string) ([]Channel, error) {
+	channels := []Channel{}
+	nextPageToken := ""
+	flag := true
+	mine := ""
+	for flag {
+		subscriptions, er0 := d.Client.GetSubscriptions(channelId, mine, 50, nextPageToken)
+		if er0 != nil {
+			return nil, er0
+		}
+		nextPageToken = subscriptions.NextPageToken
+		if len(nextPageToken) <= 0 {
+			flag = false
+		}
+		channels = append(channels, subscriptions.List...)
+	}
+	return channels, nil
 }
 
 func syncChannel(ctx context.Context, d *DefaultMongoSyncService, channelId string) (int, error) {
@@ -90,6 +139,8 @@ func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *
 		er1Chan := make(chan error)
 		resultChan := make(chan *PlaylistResult)
 		er2Chan := make(chan error)
+		resSub := make(chan []Channel)
+		er3Chan := make(chan error)
 		go func() {
 			res, err := syncUploads(ctx, channel.Uploads, d, timestamp)
 			rChan <- res
@@ -100,42 +151,55 @@ func checkAndSyncUpload(ctx context.Context, channelSync *ChannelSync, channel *
 			resultChan <- res
 			er2Chan <- err
 		}()
+		go func() {
+			res, err := d.GetSubscriptions(ctx, channel.Id)
+			resSub <- res
+			er3Chan <- err
+		}()
 		r := <-rChan
 		er1 := <-er1Chan
 		result := <-resultChan
 		er2 := <-er2Chan
+		subChan := <-resSub
+		er3 := <-er3Chan
 		if er1 != nil {
 			return 0, er1
 		}
 		if er2 != nil {
 			return 0, er2
 		}
+		if er3 != nil {
+			return 0, er3
+		}
 		channel.LastUpload = r.Timestamp
 		channel.Count = r.Count
 		channel.ItemCount = r.All
+		for _, v := range subChan {
+			channel.Channels = append(channel.Channels, v.Id)
+		}
 		if syncCollection {
-			channel.PlaylistCount = result.Count
-			channel.PlaylistItemCount = result.All
-			channel.PlaylistVideoCount = result.VideoCount
-			channel.PlaylistVideoItemCount = result.AllVideoCount
+			channel.PlaylistCount = &result.Count
+			channel.PlaylistItemCount = &result.All
+			channel.PlaylistVideoCount = &result.VideoCount
+			channel.PlaylistVideoItemCount = &result.AllVideoCount
 		}
 		channelSync := ChannelSync{
 			Id:       channel.Id,
 			Synctime: &date,
 			Uploads:  channel.Uploads,
 		}
-		er3Chan := make(chan error)
+		er4Chan := make(chan error)
 		go func() {
 			_, err := d.Repository.SaveChannel(ctx, *channel)
-			er3Chan <- err
+			er4Chan <- err
 		}()
-		res, er4 := d.Repository.SaveChannelSync(ctx, channelSync)
-		er3 := <-er3Chan
-		if er3 != nil {
-			return 0, er3
-		}
+		res, er5 := d.Repository.SaveChannelSync(ctx, channelSync)
+		er4 := <-er4Chan
 		if er4 != nil {
 			return 0, er4
+		}
+		if er5 != nil {
+			return 0, er5
 		}
 		return res, nil
 	}
@@ -157,7 +221,7 @@ func syncChannelPlaylists(ctx context.Context, channelId string, syncVideos bool
 		var playlistIds []string
 		for _, v := range channelPlaylists.List {
 			playlistIds = append(playlistIds, v.Id)
-			allVideoCount = allVideoCount + v.Count
+			allVideoCount = allVideoCount + *v.Count
 		}
 		nextPageToken = channelPlaylists.NextPageToken
 		if nextPageToken == "" {
@@ -385,7 +449,7 @@ func syncPlaylist(ctx context.Context, playlistId string, syncVideos bool, d *De
 		return 0, er1
 	}
 	playlist.ItemCount = playlist.Count
-	playlist.Count = res.Count
+	playlist.Count = &res.Count
 	er2Chan := make(chan error)
 	er3Chan := make(chan error)
 	go func() {
@@ -427,3 +491,59 @@ func notIn(ids []string, subIds []string) []string {
 	}
 	return newIds
 }
+
+//func SyncSubcription(key string, channelId string, mine string, max int, nextPageToken string) (*ListResultChannel, error) {
+//	var maxResult int
+//	var pageToken string
+//	var mineStr string
+//	var channel string
+//	if max > 0 {
+//		maxResult = max
+//	} else {
+//		maxResult = 50
+//	}
+//	if len(nextPageToken) > 0 {
+//		pageToken = fmt.Sprintf(`&pageToken=%s`, nextPageToken)
+//	} else {
+//		pageToken = ""
+//	}
+//	if len(mine) > 0 {
+//		mineStr = fmt.Sprintf(`&mine=%s`, mine)
+//	} else {
+//		mineStr = ""
+//	}
+//	if len(channelId) > 0 {
+//		channel = fmt.Sprintf(`&channelId=%s`, channelId)
+//	} else {
+//		channel = ""
+//	}
+//	url := fmt.Sprintf(`https://youtube.googleapis.com/youtube/v3/subscriptions?key=%s%s%s&maxResults=%s%s&part=snippet`, key, mineStr, channel, maxResult, pageToken)
+//	resp, er0 := http.Get(url)
+//	if er0 != nil {
+//		return nil, er0
+//	}
+//	var summary SubcriptionTubeResponse
+//	body, er1 := ioutil.ReadAll(resp.Body)
+//	if er1 != nil {
+//		return nil, er1
+//	}
+//	defer resp.Body.Close()
+//	er2 := json.Unmarshal(body, &summary)
+//	if er2 != nil {
+//		return nil, er2
+//	}
+//	var channels ListResultChannel
+//	channels.NextPageToken = summary.NextPageToken
+//	for _, v := range summary.Items {
+//		var chann Channel
+//		chann.Id = v.Id
+//		chann.Title = v.Snippet.Title
+//		chann.Description = v.Snippet.Description
+//		chann.PublishedAt = &v.Snippet.PublishedAt
+//		chann.Thumbnail = v.Snippet.Thumbnails.Default.Url
+//		chann.MediumThumbnail = v.Snippet.Thumbnails.Medium.Url
+//		chann.HighThumbnail = v.Snippet.Thumbnails.High.Url
+//		channels.List = append(channels.List, chann)
+//	}
+//	return &channels, nil
+//}

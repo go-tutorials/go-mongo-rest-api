@@ -40,7 +40,7 @@ func (m *MongoVideoRepository) GetChannelSync(ctx context.Context, channelId str
 	query := bson.M{"_id": channelId}
 	result := m.ChannelSyncCollection.FindOne(ctx, query)
 	if result.Err() != nil {
-		if strings.Compare(fmt.Sprint(result.Err()), "mongo: no documents in result") == 0 {
+		if strings.Compare(fmt.Sprint(result.Err()), "client_mongo: no documents in result") == 0 {
 			return nil, nil
 		} else {
 			return nil, result.Err()

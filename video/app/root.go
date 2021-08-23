@@ -10,6 +10,7 @@ type Root struct {
 	Mongo      MongoConfig     `mapstructure:"mongo"`
 	Cassandra  CassandraConfig `mapstructure:"cassandra"`
 	Postgre    PostgreConfig   `mapstructure:"postgre"`
+	OpenDb     int             `mapstructure:"openDb"`
 	Log        log.Config      `mapstructure:"log"`
 	MiddleWare mid.LogConfig   `mapstructure:"middleware"`
 	Key        string          `mapstructure:"key"`

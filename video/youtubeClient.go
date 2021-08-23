@@ -12,4 +12,5 @@ type SyncClient interface {
 	GetChannelPlaylists(channelId string, max int16, nextPageToken string) (*ListResultPlaylist, error)
 	GetPlaylistVideos(playlistId string, max int16, nextPageToken string) (*ListResultPlaylistVideo, error)
 	GetVideos(ids []string) (*ListResultVideos, error)
+	GetSubscriptions(channelId string, mine string, max int, nextPageToken string) (*ListResultChannel, error)
 }

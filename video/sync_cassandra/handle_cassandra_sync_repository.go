@@ -41,8 +41,8 @@ func (c *CassandraVideoRepository) SaveChannel(ctx context.Context, channel Chan
 	if er0 != nil {
 		return 0, er0
 	}
-	query := "insert into channel (id , count, country, customUrl, description , favorites, highThumbnail, itemCount, likes, localizedDescription, localizedTitle, mediumThumbnail, playlistCount , playlistItemCount, playlistVideoCount, playlistVideoItemCount, publishedAt, thumbnail, lastUpload, title ,uploads) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)"
-	err := session.Query(query, channel.Id, channel.Count, channel.Country, channel.CustomUrl, channel.Description, channel.Favorites, channel.HighThumbnail, channel.ItemCount, channel.Likes, channel.LocalizedDescription, channel.LocalizedTitle, channel.MediumThumbnail, channel.PlaylistCount, channel.PlaylistItemCount, channel.PlaylistVideoCount, channel.PlaylistVideoItemCount, channel.PublishedAt, channel.Thumbnail, channel.LastUpload, channel.Title, channel.Uploads).Exec()
+	query := "insert into channel (id , count, country, customUrl, description , favorites, highThumbnail, itemCount, likes, localizedDescription, localizedTitle, mediumThumbnail, playlistCount , playlistItemCount, playlistVideoCount, playlistVideoItemCount, publishedAt, thumbnail, lastUpload, title ,uploads, channels) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?)"
+	err := session.Query(query, channel.Id, channel.Count, channel.Country, channel.CustomUrl, channel.Description, channel.Favorites, channel.HighThumbnail, channel.ItemCount, channel.Likes, channel.LocalizedDescription, channel.LocalizedTitle, channel.MediumThumbnail, channel.PlaylistCount, channel.PlaylistItemCount, channel.PlaylistVideoCount, channel.PlaylistVideoItemCount, channel.PublishedAt, channel.Thumbnail, channel.LastUpload, channel.Title, channel.Uploads, channel.Channels).Exec()
 	if err != nil {
 		return -1, err
 	}

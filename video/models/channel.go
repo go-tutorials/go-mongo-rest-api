@@ -34,4 +34,5 @@ type Channel struct {
 	LastUpload             *time.Time `mapstructure:"lastUpload" json:"lastUpload,omitempty" gorm:"column:lastUpload" bson:"lastUpload,omitempty" dynamodbav:"lastUpload,omitempty" firestore:"lastUpload,omitempty" cql:"lastupload,omitempty"`
 	Title                  string     `mapstructure:"title" json:"title,omitempty" gorm:"column:title" bson:"title,omitempty" dynamodbav:"title,omitempty" firestore:"title,omitempty" cql:"title,omitempty"`
 	Uploads                string     `mapstructure:"uploads" json:"uploads,omitempty" gorm:"column:uploads" bson:"uploads,omitempty" dynamodbav:"uploads,omitempty" firestore:"uploads,omitempty" cql:"uploads,omitempty"`
+	Channels               []string   `mapstructure:"channels" json:"channels,omitempty" gorm:"column:channels" bson:"channels,omitempty" dynamodbav:"channels,omitempty" firestore:"channels,omitempty" cql:"channels,omitempty"`
 }

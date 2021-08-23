@@ -1,8 +1,6 @@
 package models_tube
 
-import (
-	"time"
-)
+import "time"
 
 type PlaylistTubeResponse struct {
 	Kind          string          `mapstructure:"kind" json:"kind,omitempty" gorm:"column:kind" bson:"kind,omitempty" dynamodbav:"kind,omitempty" firestore:"kind,omitempty"`

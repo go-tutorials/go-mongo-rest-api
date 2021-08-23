@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	. "go-service/video"
 	"net/http"
 )
@@ -65,4 +66,18 @@ func (h *SyncHandler) SyncPlaylist(w http.ResponseWriter, r *http.Request) {
 		result = "Invalid channel to sync"
 	}
 	respond(w, result)
+}
+
+func (h *SyncHandler) SyncSubctiption(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if len(id) <= 0 {
+		http.Error(w, "Id cannot empty", http.StatusBadRequest)
+		return
+	}
+	resultChannel, er2 := h.sync.GetSubscriptions(r.Context(), id)
+	if er2 != nil {
+		http.Error(w, er2.Error(), http.StatusBadRequest)
+		return
+	}
+	respond(w, resultChannel)
 }

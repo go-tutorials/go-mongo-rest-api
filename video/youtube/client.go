@@ -114,6 +114,62 @@ func (y *YoutubeSyncClient) GetVideos(ids []string) (*ListResultVideos, error) {
 	return result, err
 }
 
+func (y *YoutubeSyncClient) GetSubscriptions(channelId string, mine string, max int, nextPageToken string) (*ListResultChannel, error) {
+	var maxResult int
+	var pageToken string
+	var mineStr string
+	var channel string
+	if max > 0 {
+		maxResult = max
+	} else {
+		maxResult = 50
+	}
+	if len(nextPageToken) > 0 {
+		pageToken = fmt.Sprintf(`&pageToken=%s`, nextPageToken)
+	} else {
+		pageToken = ""
+	}
+	if len(mine) > 0 {
+		mineStr = fmt.Sprintf(`&mine=%s`, mine)
+	} else {
+		mineStr = ""
+	}
+	if len(channelId) > 0 {
+		channel = fmt.Sprintf(`&channelId=%s`, channelId)
+	} else {
+		channel = ""
+	}
+	url := fmt.Sprintf(`https://youtube.googleapis.com/youtube/v3/subscriptions?key=%s%s%s&maxResults=%d%s&part=snippet`, y.Key, mineStr, channel, maxResult, pageToken)
+	resp, er0 := http.Get(url)
+	if er0 != nil {
+		return nil, er0
+	}
+	var summary SubcriptionTubeResponse
+	body, er1 := ioutil.ReadAll(resp.Body)
+	if er1 != nil {
+		return nil, er1
+	}
+	defer resp.Body.Close()
+	er2 := json.Unmarshal(body, &summary)
+	if er2 != nil {
+		return nil, er2
+	}
+	var channels ListResultChannel
+	channels.NextPageToken = summary.NextPageToken
+	for _, v := range summary.Items {
+		var chann Channel
+		chann.Id = v.Snippet.ResourceId.ChannelId
+		chann.Title = v.Snippet.Title
+		chann.Description = v.Snippet.Description
+		chann.PublishedAt = &v.Snippet.PublishedAt
+		chann.Thumbnail = &v.Snippet.Thumbnails.Default.Url
+		chann.MediumThumbnail = &v.Snippet.Thumbnails.Medium.Url
+		chann.HighThumbnail = &v.Snippet.Thumbnails.High.Url
+		channels.List = append(channels.List, chann)
+	}
+	return &channels, nil
+}
+
 func convertChannel(url string) (*[]Channel, error) {
 	resp, er0 := http.Get(url)
 	if er0 != nil {
@@ -139,9 +195,9 @@ func convertChannel(url string) (*[]Channel, error) {
 		channel[i].Country = v.Snippet.Country
 		channel[i].LocalizedTitle = v.Snippet.Localized.Title
 		channel[i].LocalizedDescription = v.Snippet.Localized.Description
-		channel[i].Thumbnail = v.Snippet.Thumbnails.Default.Url
-		channel[i].MediumThumbnail = v.Snippet.Thumbnails.Medium.Url
-		channel[i].HighThumbnail = v.Snippet.Thumbnails.High.Url
+		channel[i].Thumbnail = &v.Snippet.Thumbnails.Default.Url
+		channel[i].MediumThumbnail = &v.Snippet.Thumbnails.Medium.Url
+		channel[i].HighThumbnail = &v.Snippet.Thumbnails.High.Url
 		channel[i].Uploads = v.ContentDetails.RelatedPlaylists.Uploads
 		channel[i].Likes = v.ContentDetails.RelatedPlaylists.Likes
 		channel[i].Favorites = v.ContentDetails.RelatedPlaylists.Favorites
@@ -180,12 +236,12 @@ func convertPlaylist(url string) (*ListResultPlaylist, error) {
 		playlist.LocalizedDescription = v.Snippet.Localized.Description
 		playlist.ChannelId = v.Snippet.ChannelId
 		playlist.ChannelTitle = v.Snippet.ChannelTitle
-		playlist.Count = v.ContentDetails.ItemCount
-		playlist.Thumbnail = v.Snippet.Thumbnails.Default.Url
-		playlist.MediumThumbnail = v.Snippet.Thumbnails.Medium.Url
-		playlist.HighThumbnail = v.Snippet.Thumbnails.High.Url
-		playlist.StandardThumbnail = v.Snippet.Thumbnails.Standard.Url
-		playlist.MaxresThumbnail = v.Snippet.Thumbnails.Maxres.Url
+		playlist.Count = &v.ContentDetails.ItemCount
+		playlist.Thumbnail = &v.Snippet.Thumbnails.Default.Url
+		playlist.MediumThumbnail = &v.Snippet.Thumbnails.Medium.Url
+		playlist.HighThumbnail = &v.Snippet.Thumbnails.High.Url
+		playlist.StandardThumbnail = &v.Snippet.Thumbnails.Standard.Url
+		playlist.MaxresThumbnail = &v.Snippet.Thumbnails.Maxres.Url
 		listResultPlaylist.List = append(listResultPlaylist.List, playlist)
 	}
 	return &listResultPlaylist, nil
@@ -224,11 +280,11 @@ func convertPlaylistVideo(url string) (*ListResultPlaylistVideo, error) {
 		playlistVideo.Position = v.Snippet.Position
 		playlistVideo.VideoOwnerChannelId = v.Snippet.VideoOwnerChannelId
 		playlistVideo.VideoOwnerChannelTitle = v.Snippet.VideoOwnerChannelTitle
-		playlistVideo.Thumbnail = v.Snippet.Thumbnails.Default.Url
-		playlistVideo.MediumThumbnail = v.Snippet.Thumbnails.Medium.Url
-		playlistVideo.HighThumbnail = v.Snippet.Thumbnails.High.Url
-		playlistVideo.StandardThumbnail = v.Snippet.Thumbnails.Standard.Url
-		playlistVideo.MaxresThumbnail = v.Snippet.Thumbnails.Maxres.Url
+		playlistVideo.Thumbnail = &v.Snippet.Thumbnails.Default.Url
+		playlistVideo.MediumThumbnail = &v.Snippet.Thumbnails.Medium.Url
+		playlistVideo.HighThumbnail = &v.Snippet.Thumbnails.High.Url
+		playlistVideo.StandardThumbnail = &v.Snippet.Thumbnails.Standard.Url
+		playlistVideo.MaxresThumbnail = &v.Snippet.Thumbnails.Maxres.Url
 		listResultPlaylistVideo.List = append(listResultPlaylistVideo.List, playlistVideo)
 	}
 	return &listResultPlaylistVideo, nil
@@ -266,8 +322,6 @@ func convertVideos(url string) (*ListResultVideos, error) {
 		video.ChannelTitle = v.Snippet.ChannelTitle
 		video.Tags = v.Snippet.Tags
 		video.CategoryId = v.Snippet.CategoryId
-		video.PlaylistId = v.Snippet.PlaylistId
-		video.Position = v.Snippet.Position
 		video.LiveBroadcastContent = v.Snippet.LiveBroadcastContent
 		video.DefaultLanguage = v.Snippet.DefaultLanguage
 		video.DefaultAudioLanguage = v.Snippet.DefaultAudioLanguage
@@ -275,7 +329,7 @@ func convertVideos(url string) (*ListResultVideos, error) {
 		if err != nil {
 			return nil, err
 		}
-		video.Duration = int(duration)
+		video.Duration = int64(duration)
 		video.Dimension = v.ContentDetails.Dimension
 		if v.ContentDetails.Definition == "hd" {
 			video.Definition = 5
@@ -283,16 +337,16 @@ func convertVideos(url string) (*ListResultVideos, error) {
 			video.Definition = 4
 		}
 		video.Caption = v.ContentDetails.Caption
-		video.LicensedContent = v.ContentDetails.LicensedContent
+		video.LicensedContent = &v.ContentDetails.LicensedContent
 		if v.ContentDetails.Projection == "rectangular" {
 			video.Projection = ""
 		} else {
 			video.Projection = "3"
 		}
-		video.Thumbnail = v.Snippet.Thumbnails.Default.Url
-		video.HighThumbnail = v.Snippet.Thumbnails.Medium.Url
-		video.StandardThumbnail = v.Snippet.Thumbnails.Standard.Url
-		video.MaxresThumbnail = v.Snippet.Thumbnails.Maxres.Url
+		video.Thumbnail = &v.Snippet.Thumbnails.Default.Url
+		video.HighThumbnail = &v.Snippet.Thumbnails.Medium.Url
+		video.StandardThumbnail = &v.Snippet.Thumbnails.Standard.Url
+		video.MaxresThumbnail = &v.Snippet.Thumbnails.Maxres.Url
 		if len(v.ContentDetails.RegionRestriction.Allow) > 0 {
 			video.AllowedRegions = v.ContentDetails.RegionRestriction.Allow
 		}

@@ -22,6 +22,7 @@ func Route(r *mux.Router, context context.Context, root Root) error {
 
 	r.HandleFunc("/tube/channels", app.SyncHandler.SyncChannel).Methods(POST)
 	r.HandleFunc("/tube/playlists", app.SyncHandler.SyncPlaylist).Methods(POST)
+	r.HandleFunc("/tube/channels/subscriptions/{id}", app.SyncHandler.SyncSubctiption).Methods(GET)
 
 	r.HandleFunc("/tube/channel/{params}", app.ClientHandler.GetChannel).Methods(GET)
 	r.HandleFunc("/tube/channels/list/{params}", app.ClientHandler.GetChannels).Methods(GET)
