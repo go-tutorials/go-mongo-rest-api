@@ -22,16 +22,16 @@ type UserService interface {
 	Delete(ctx context.Context, id string) (int64, error)
 }
 
-type MongoUserService struct {
+type userService struct {
 	Collection *mongo.Collection
 }
 
-func NewUserService(db *mongo.Database) *MongoUserService {
+func NewUserService(db *mongo.Database) UserService {
 	collectionName := "users"
-	return &MongoUserService{Collection: db.Collection(collectionName)}
+	return &userService{Collection: db.Collection(collectionName)}
 }
 
-func (s *MongoUserService) All(ctx context.Context) (*[]User, error) {
+func (s *userService) All(ctx context.Context) (*[]User, error) {
 	query := bson.M{}
 	cursor, er1 := s.Collection.Find(ctx, query)
 	if er1 != nil {
@@ -45,7 +45,7 @@ func (s *MongoUserService) All(ctx context.Context) (*[]User, error) {
 	return &result, nil
 }
 
-func (s *MongoUserService) Load(ctx context.Context, id string) (*User, error) {
+func (s *userService) Load(ctx context.Context, id string) (*User, error) {
 	query := bson.M{"_id": id}
 	result := s.Collection.FindOne(ctx, query)
 	if result.Err() != nil {
@@ -63,7 +63,7 @@ func (s *MongoUserService) Load(ctx context.Context, id string) (*User, error) {
 	return &user, nil
 }
 
-func (s *MongoUserService) Insert(ctx context.Context, user *User) (int64, error) {
+func (s *userService) Insert(ctx context.Context, user *User) (int64, error) {
 	_, err := s.Collection.InsertOne(ctx, user)
 	if err != nil {
 		errMsg := err.Error()
@@ -80,7 +80,7 @@ func (s *MongoUserService) Insert(ctx context.Context, user *User) (int64, error
 	return 1, nil
 }
 
-func (s *MongoUserService) Update(ctx context.Context, user *User) (int64, error) {
+func (s *userService) Update(ctx context.Context, user *User) (int64, error) {
 	query := bson.M{"_id": user.Id}
 	updateQuery := bson.M{
 		"$set": user,
@@ -95,7 +95,7 @@ func (s *MongoUserService) Update(ctx context.Context, user *User) (int64, error
 	}
 }
 
-func (s *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
+func (s *userService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
 	userType := reflect.TypeOf(User{})
 	maps := mgo.MakeBsonMap(userType)
 	filter := mgo.BuildQueryByIdFromMap(user, "id")
@@ -103,7 +103,7 @@ func (s *MongoUserService) Patch(ctx context.Context, user map[string]interface{
 	return mgo.PatchOne(ctx, s.Collection, bson, filter)
 }
 
-func (s *MongoUserService) Delete(ctx context.Context, id string) (int64, error) {
+func (s *userService) Delete(ctx context.Context, id string) (int64, error) {
 	query := bson.M{"_id": id}
 	result, err := s.Collection.DeleteOne(ctx, query)
 	if result == nil || err != nil {

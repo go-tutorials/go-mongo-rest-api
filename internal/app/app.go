@@ -16,7 +16,7 @@ type ApplicationContext struct {
 	UserHandler   *handler.UserHandler
 }
 
-func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
+func NewApp(ctx context.Context, root Config) (*ApplicationContext, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(root.Mongo.Uri))
 	if err != nil {
 		return nil, err

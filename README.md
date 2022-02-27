@@ -1,10 +1,10 @@
-# go-mongo-rest-api
+# go-mongo-tutorial
 
 ## How to run
 #### Clone the repository
 ```shell
-git clone https://github.com/go-tutorials/go-mongo-rest-api.git
-cd go-mongo-rest-api
+git clone https://github.com/go-tutorials/go-mongo-tutorial.git
+cd go-mongo-tutorial
 ```
 
 #### To run the application
@@ -145,31 +145,50 @@ We must solve 2 problems:
 import server "github.com/core-go/service"
 
 func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
-    var user User
-    userType := reflect.TypeOf(user)
-    _, jsonMap := sv.BuildMapField(userType)
-    body, _ := sv.BuildMapAndStruct(r, &user)
-    json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
+		return
+	}
 
-    result, er2 := h.service.Patch(r.Context(), json)
-    if er2 != nil {
-        http.Error(w, er2.Error(), http.StatusInternalServerError)
-        return
-    }
-    respond(w, result)
+	ids := []string{"id"}
+
+	var user User
+	userType := reflect.TypeOf(user)
+	_, jsonMap, _ := sv.BuildMapField(userType)
+	body, _ := sv.BuildMapAndStruct(r, &user)
+	if len(user.Id) == 0 {
+		user.Id = id
+	} else if id != user.Id {
+		http.Error(w, "Id not match", http.StatusBadRequest)
+		return
+	}
+	json, er1 := sv.BodyToJsonMap(r, user, body, ids, jsonMap)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result, er2 := h.service.Patch(r.Context(), json)
+	if er2 != nil {
+		http.Error(w, er2.Error(), http.StatusInternalServerError)
+		return
+	}
+	JSON(w, result)
 }
+
 ```
 
 2. At service layer or repository layer, we use [core-go/mongo](https://github.com/core-go/mongo), to convert from json to bson 
 ```go
 import mgo "github.com/core-go/mongo"
 
-func (p *MongoUserService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-    userType := reflect.TypeOf(User{})
-    maps := mgo.MakeBsonMap(userType)
-    filter := mgo.BuildQueryByIdFromMap(user, "id")
-    bson := mgo.MapToBson(user, maps)
-    return mgo.PatchOne(ctx, p.Collection, bson, filter)
+func (s *userService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
+	userType := reflect.TypeOf(User{})
+	maps := mgo.MakeBsonMap(userType)
+	filter := mgo.BuildQueryByIdFromMap(user, "id")
+	bson := mgo.MapToBson(user, maps)
+	return mgo.PatchOne(ctx, s.Collection, bson, filter)
 }
 ```
 
@@ -227,17 +246,8 @@ package main
 
 import "github.com/core-go/config"
 
-type Root struct {
-    DB DatabaseConfig `mapstructure:"db"`
-}
-
-type DatabaseConfig struct {
-    Driver                 string `mapstructure:"driver"`
-    DataSourceName string `mapstructure:"data_source_name"`
-}
-
 func main() {
-    var conf Root
+    var conf Config
     err := config.Load(&conf, "configs/config")
     if err != nil {
         panic(err)
@@ -255,16 +265,16 @@ import (
 )
 
 func main() {
-	var conf app.Root
+	var conf app.Config
 	config.Load(&conf, "configs/config")
 
 	r := mux.NewRouter()
 
 	log.Initialize(conf.Log)
 	r.Use(mid.BuildContext)
-	logger := mid.NewStructuredLogger()
+	logger := mid.NewLogger()
 	r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
-	r.Use(mid.Recover(log.ErrorMsg))
+	r.Use(mid.Recover(log.PanicMsg))
 }
 ```
 To configure to ignore the health check, use "skips":
