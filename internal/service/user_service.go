@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
-	mgo "github.com/core-go/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -18,7 +16,6 @@ type UserService interface {
 	Load(ctx context.Context, id string) (*User, error)
 	Insert(ctx context.Context, user *User) (int64, error)
 	Update(ctx context.Context, user *User) (int64, error)
-	Patch(ctx context.Context, user map[string]interface{}) (int64, error)
 	Delete(ctx context.Context, id string) (int64, error)
 }
 
@@ -93,14 +90,6 @@ func (s *userService) Update(ctx context.Context, user *User) (int64, error) {
 	} else {
 		return result.MatchedCount, err
 	}
-}
-
-func (s *userService) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-	userType := reflect.TypeOf(User{})
-	maps := mgo.MakeBsonMap(userType)
-	filter := mgo.BuildQueryByIdFromMap(user, "id")
-	bson := mgo.MapToBson(user, maps)
-	return mgo.PatchOne(ctx, s.Collection, bson, filter)
 }
 
 func (s *userService) Delete(ctx context.Context, id string) (int64, error) {

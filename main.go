@@ -6,9 +6,9 @@ import (
 	"github.com/core-go/config"
 	"github.com/core-go/log"
 	mid "github.com/core-go/log/middleware"
-	sv "github.com/core-go/service"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 
 	"go-service/internal/app"
 )
@@ -34,8 +34,12 @@ func main() {
 	if er2 != nil {
 		panic(er2)
 	}
-	fmt.Println(sv.ServerInfo(conf.Server))
-	if er3 := http.ListenAndServe(sv.Addr(conf.Server.Port), r); er3 != nil {
+	fmt.Println("Start server")
+	server := ""
+	if conf.Server.Port != nil {
+		server = ":" + strconv.FormatInt(*conf.Server.Port, 10)
+	}
+	if er3 := http.ListenAndServe(server, r); er3 != nil {
 		fmt.Println(er3.Error())
 	}
 }
