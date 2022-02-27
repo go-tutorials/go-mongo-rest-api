@@ -7,13 +7,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"go-service/internal/handlers"
-	"go-service/internal/services"
+	"go-service/internal/handler"
+	"go-service/internal/service"
 )
 
 type ApplicationContext struct {
 	HealthHandler *health.Handler
-	UserHandler   *handlers.UserHandler
+	UserHandler   *handler.UserHandler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -23,8 +23,8 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}
 	db := client.Database(root.Mongo.Database)
 
-	userService := services.NewUserService(db)
-	userHandler := handlers.NewUserHandler(userService)
+	userService := service.NewUserService(db)
+	userHandler := handler.NewUserHandler(userService)
 
 	mongoChecker := mgo.NewHealthChecker(db)
 	healthHandler := health.NewHandler(mongoChecker)

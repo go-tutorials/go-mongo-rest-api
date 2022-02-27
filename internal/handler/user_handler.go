@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"reflect"
 
-	. "go-service/internal/models"
-	. "go-service/internal/services"
+	. "go-service/internal/model"
+	. "go-service/internal/service"
 )
 
 type UserHandler struct {
@@ -19,13 +19,13 @@ func NewUserHandler(service UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
-func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	result, err := h.service.GetAll(r.Context())
+func (h *UserHandler) All(w http.ResponseWriter, r *http.Request) {
+	result, err := h.service.All(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	respond(w, result)
+	JSON(w, result)
 }
 
 func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	respond(w, result)
+	JSON(w, result)
 }
 
 func (h *UserHandler) Insert(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func (h *UserHandler) Insert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er1.Error(), http.StatusInternalServerError)
 		return
 	}
-	respond(w, result)
+	JSON(w, result)
 }
 
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +85,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er2.Error(), http.StatusInternalServerError)
 		return
 	}
-	respond(w, result)
+	JSON(w, result)
 }
 
 func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +99,7 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 
 	var user User
 	userType := reflect.TypeOf(user)
-	_, jsonMap := sv.BuildMapField(userType)
+	_, jsonMap, _ := sv.BuildMapField(userType)
 	body, _ := sv.BuildMapAndStruct(r, &user)
 	if len(user.Id) == 0 {
 		user.Id = id
@@ -107,7 +107,7 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Id not match", http.StatusBadRequest)
 		return
 	}
-	json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
+	json, er1 := sv.BodyToJsonMap(r, user, body, ids, jsonMap)
 	if er1 != nil {
 		http.Error(w, er1.Error(), http.StatusInternalServerError)
 		return
@@ -118,7 +118,7 @@ func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er2.Error(), http.StatusInternalServerError)
 		return
 	}
-	respond(w, result)
+	JSON(w, result)
 }
 
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -132,10 +132,10 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	respond(w, result)
+	JSON(w, result)
 }
 
-func respond(w http.ResponseWriter, result interface{}) {
+func JSON(w http.ResponseWriter, result interface{}) {
 	response, _ := json.Marshal(result)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

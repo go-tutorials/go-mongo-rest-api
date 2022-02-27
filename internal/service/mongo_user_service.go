@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"context"
@@ -10,8 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	. "go-service/internal/models"
+	. "go-service/internal/model"
 )
+
+type UserService interface {
+	All(ctx context.Context) (*[]User, error)
+	Load(ctx context.Context, id string) (*User, error)
+	Insert(ctx context.Context, user *User) (int64, error)
+	Update(ctx context.Context, user *User) (int64, error)
+	Patch(ctx context.Context, user map[string]interface{}) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
+}
 
 type MongoUserService struct {
 	Collection *mongo.Collection
@@ -22,7 +31,7 @@ func NewUserService(db *mongo.Database) *MongoUserService {
 	return &MongoUserService{Collection: db.Collection(collectionName)}
 }
 
-func (s *MongoUserService) GetAll(ctx context.Context) (*[]User, error) {
+func (s *MongoUserService) All(ctx context.Context) (*[]User, error) {
 	query := bson.M{}
 	cursor, er1 := s.Collection.Find(ctx, query)
 	if er1 != nil {
