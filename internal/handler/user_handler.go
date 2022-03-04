@@ -18,12 +18,12 @@ func NewUserHandler(service UserService) *UserHandler {
 }
 
 func (h *UserHandler) All(w http.ResponseWriter, r *http.Request) {
-	result, err := h.service.All(r.Context())
+	res, err := h.service.All(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, result)
+	JSON(w, http.StatusOK, res)
 }
 
 func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
@@ -33,12 +33,12 @@ func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.service.Load(r.Context(), id)
+	res, err := h.service.Load(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, result)
+	JSON(w, http.StatusOK, res)
 }
 
 func (h *UserHandler) Insert(w http.ResponseWriter, r *http.Request) {
@@ -50,12 +50,12 @@ func (h *UserHandler) Insert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, er2 := h.service.Insert(r.Context(), &user)
+	res, er2 := h.service.Insert(r.Context(), &user)
 	if er2 != nil {
 		http.Error(w, er1.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, result)
+	JSON(w, http.StatusCreated, res)
 }
 
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -78,12 +78,12 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, er2 := h.service.Update(r.Context(), &user)
+	res, er2 := h.service.Update(r.Context(), &user)
 	if er2 != nil {
 		http.Error(w, er2.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, result)
+	JSON(w, http.StatusOK, res)
 }
 
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -92,17 +92,16 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Id cannot be empty", http.StatusBadRequest)
 		return
 	}
-	result, err := h.service.Delete(r.Context(), id)
+	res, err := h.service.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, result)
+	JSON(w, http.StatusOK, res)
 }
 
-func JSON(w http.ResponseWriter, result interface{}) {
-	response, _ := json.Marshal(result)
+func JSON(w http.ResponseWriter, code int, res interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
+	w.WriteHeader(code)
+	return json.NewEncoder(w).Encode(res)
 }

@@ -29,31 +29,31 @@ func NewUserService(db *mongo.Database) UserService {
 }
 
 func (s *userService) All(ctx context.Context) (*[]User, error) {
-	query := bson.M{}
-	cursor, er1 := s.Collection.Find(ctx, query)
+	filter := bson.M{}
+	cursor, er1 := s.Collection.Find(ctx, filter)
 	if er1 != nil {
 		return nil, er1
 	}
-	var result []User
-	er2 := cursor.All(ctx, &result)
+	var res []User
+	er2 := cursor.All(ctx, &res)
 	if er2 != nil {
 		return nil, er2
 	}
-	return &result, nil
+	return &res, nil
 }
 
 func (s *userService) Load(ctx context.Context, id string) (*User, error) {
-	query := bson.M{"_id": id}
-	result := s.Collection.FindOne(ctx, query)
-	if result.Err() != nil {
-		if strings.Compare(fmt.Sprint(result.Err()), "mongo: no documents in result") == 0 {
+	filter := bson.M{"_id": id}
+	res := s.Collection.FindOne(ctx, filter)
+	if res.Err() != nil {
+		if strings.Compare(fmt.Sprint(res.Err()), "mongo: no documents in res") == 0 {
 			return nil, nil
 		} else {
-			return nil, result.Err()
+			return nil, res.Err()
 		}
 	}
 	user := User{}
-	err := result.Decode(&user)
+	err := res.Decode(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -78,25 +78,25 @@ func (s *userService) Insert(ctx context.Context, user *User) (int64, error) {
 }
 
 func (s *userService) Update(ctx context.Context, user *User) (int64, error) {
-	query := bson.M{"_id": user.Id}
-	updateQuery := bson.M{
+	filter := bson.M{"_id": user.Id}
+	update := bson.M{
 		"$set": user,
 	}
-	result, err := s.Collection.UpdateOne(ctx, query, updateQuery)
-	if result.ModifiedCount > 0 {
-		return result.ModifiedCount, err
-	} else if result.UpsertedCount > 0 {
-		return result.UpsertedCount, err
+	res, err := s.Collection.UpdateOne(ctx, filter, update)
+	if res.ModifiedCount > 0 {
+		return res.ModifiedCount, err
+	} else if res.UpsertedCount > 0 {
+		return res.UpsertedCount, err
 	} else {
-		return result.MatchedCount, err
+		return res.MatchedCount, err
 	}
 }
 
 func (s *userService) Delete(ctx context.Context, id string) (int64, error) {
-	query := bson.M{"_id": id}
-	result, err := s.Collection.DeleteOne(ctx, query)
-	if result == nil || err != nil {
+	filter := bson.M{"_id": id}
+	res, err := s.Collection.DeleteOne(ctx, filter)
+	if res == nil || err != nil {
 		return 0, err
 	}
-	return result.DeletedCount, err
+	return res.DeletedCount, err
 }

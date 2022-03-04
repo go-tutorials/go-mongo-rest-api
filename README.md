@@ -16,8 +16,7 @@ go run main.go
 ### Common HTTP methods
 - GET: retrieve a representation of the resource
 - POST: create a new resource
-- PUT: update the resource
-- PATCH: perform a partial update of a resource, refer to [service](https://github.com/core-go/service) and [mongo](https://github.com/core-go/mongo)  
+- PUT: update the resource  
 - DELETE: delete a resource
 
 ## API design for health check
@@ -103,23 +102,6 @@ PUT /users/wolverine
     "email": "james.howlett@gmail.com",
     "phone": "0987654321",
     "dateOfBirth": "1974-11-16T16:59:59.999Z"
-}
-```
-#### *Response:* 1: success, 0: not found, -1: error
-```json
-1
-```
-
-### Patch one user by id
-Perform a partial update of user. For example, if you want to update 2 fields: email and phone, you can send the request body of below.
-#### *Request:* PATCH /users/:id
-```shell
-PATCH /users/wolverine
-```
-```json
-{
-    "email": "james.howlett@gmail.com",
-    "phone": "0987654321"
 }
 ```
 #### *Response:* 1: success, 0: not found, -1: error

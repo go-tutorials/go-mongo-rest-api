@@ -16,12 +16,12 @@ type ApplicationContext struct {
 	UserHandler   *handler.UserHandler
 }
 
-func NewApp(ctx context.Context, root Config) (*ApplicationContext, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(root.Mongo.Uri))
+func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Mongo.Uri))
 	if err != nil {
 		return nil, err
 	}
-	db := client.Database(root.Mongo.Database)
+	db := client.Database(conf.Mongo.Database)
 
 	userService := service.NewUserService(db)
 	userHandler := handler.NewUserHandler(userService)
