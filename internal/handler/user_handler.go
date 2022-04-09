@@ -18,12 +18,12 @@ func NewUserHandler(service UserService) *UserHandler {
 }
 
 func (h *UserHandler) All(w http.ResponseWriter, r *http.Request) {
-	res, err := h.service.All(r.Context())
+	users, err := h.service.All(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, http.StatusOK, res)
+	JSON(w, http.StatusOK, users)
 }
 
 func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
@@ -33,12 +33,12 @@ func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.Load(r.Context(), id)
+	user, err := h.service.Load(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	JSON(w, http.StatusOK, res)
+	JSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) Insert(w http.ResponseWriter, r *http.Request) {

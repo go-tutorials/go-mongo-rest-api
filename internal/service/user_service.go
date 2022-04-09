@@ -34,12 +34,12 @@ func (s *userService) All(ctx context.Context) (*[]User, error) {
 	if er1 != nil {
 		return nil, er1
 	}
-	var res []User
-	er2 := cursor.All(ctx, &res)
+	var users []User
+	er2 := cursor.All(ctx, &users)
 	if er2 != nil {
 		return nil, er2
 	}
-	return &res, nil
+	return &users, nil
 }
 
 func (s *userService) Load(ctx context.Context, id string) (*User, error) {

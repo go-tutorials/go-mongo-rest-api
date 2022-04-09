@@ -12,6 +12,17 @@ cd go-mongo-tutorial
 go run main.go
 ```
 
+## Architecture
+### Layer Architecture
+![Layer Architecture](https://camo.githubusercontent.com/d9b21eb50ef70dcaebf5a874559608f475e22c799bc66fcf99fb01f08576540f/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a4a4459546c4b3030796730496c556a5a392d737037512e706e67)
+
+### Layer Architecture with standard features: config, health check, logging, middleware log tracing
+![Layer Architecture with standard features: config, health check, logging, middleware log tracing](https://camo.githubusercontent.com/c3fcfa0a473ae4a86397e7624a0d1a5ca5a0c814119982ea3cf8694e10df1f6b/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a6e6b4673633275796f4c437a4b716c66474d4e6b6f772e706e67)
+
+### Architecture of Tutorial
+Based on the layer architecture, we simplify the architecture for this tutorial
+![Architecture of tutorial](https://camo.githubusercontent.com/3067c81fbbfc7c32430e1a31dec0c932c92d152bb9414cdf6d69b6a2b686aff3/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a564646353531774d2d6d33713036676a41386d4368412e706e67)
+
 ## API Design
 ### Common HTTP methods
 - GET: retrieve a representation of the resource
