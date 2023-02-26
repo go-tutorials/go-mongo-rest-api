@@ -125,42 +125,6 @@ paths:
                 type: integer
         '500':
           description: Internal Server Error
-    patch:
-      tags:
-        - user
-      summary: Update user
-      description: Perform a partial update of a user.
-      operationId: patchUser
-      parameters:
-        - name: userId
-          in: path
-          description: user that need to be update partially
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: Update an existent user in the store
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      responses:
-        '200':
-          description: 'return integer. 1: success'
-          content:
-            application/json:
-              schema:
-                type: integer
-        '400':
-          description: Invalid user supplied
-        '404':
-          description: User not found. Return 0
-          content:
-            application/json:
-              schema:
-                type: integer
-        '500':
-          description: Internal Server Error
     delete:
       tags:
         - user
