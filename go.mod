@@ -8,5 +8,5 @@ require (
 	github.com/core-go/log v0.1.3
 	github.com/gorilla/mux v1.8.0
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	go.mongodb.org/mongo-driver v1.7.2
+	go.mongodb.org/mongo-driver v1.11.3
 )
